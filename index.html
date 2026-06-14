@@ -1064,6 +1064,7 @@
            FIREBASE SERVICE
            ============================================ */
         const FirebaseService = {
+    // Salvar registro no Firestore
     saveRecord: async (userId, record) => {
         try {
             await db.collection('users').doc(userId).collection('records').doc(record.id).set({
@@ -1072,10 +1073,11 @@
             });
             console.log('✅ Registro salvo na nuvem');
         } catch (error) {
-            console.error('❌ Erro ao salvar:', error);
+            console.error('❌ Erro ao salvar registro:', error);
         }
     },
 
+    // Deletar registro do Firestore
     deleteRecord: async (userId, recordId) => {
         try {
             await db.collection('users').doc(userId).collection('records').doc(recordId).delete();
@@ -1085,9 +1087,10 @@
         }
     },
 
+    // Salvar orçamentos no Firestore (coleção separada)
     saveBudgets: async (userId, budgets) => {
         try {
-            await db.collection('users').doc(userId).doc('budgets').set({
+            await db.collection('budgets').doc(userId).set({
                 data: budgets,
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             });
@@ -1097,17 +1100,21 @@
         }
     },
 
+    // Carregar todos os dados do Firestore
     loadAllData: async (userId) => {
         try {
+            // Carregar registros da subcoleção
             const recordsSnapshot = await db.collection('users').doc(userId).collection('records').get();
             const records = [];
             recordsSnapshot.forEach(doc => {
                 records.push(doc.data());
             });
 
-            const budgetsDoc = await db.collection('users').doc(userId).doc('budgets').get();
+            // Carregar orçamentos da coleção separada
+            const budgetsDoc = await db.collection('budgets').doc(userId).get();
             const budgets = budgetsDoc.exists ? budgetsDoc.data().data : {};
 
+            console.log('✅ Dados carregados:', { records: records.length, budgets });
             return { records, budgets };
         } catch (error) {
             console.error('❌ Erro ao carregar dados:', error);
