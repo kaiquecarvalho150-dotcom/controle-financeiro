@@ -1453,6 +1453,7 @@ updateSingleRecord: async (id, updates) => {
 },
 
 // Atualizar registro parcelado e os próximos
+// Atualizar registro parcelado e os próximos
 updateInstallmentRecords: async (id, updates) => {
     const recordIndex = App.currentData.records.findIndex(r => r.id === id);
     if (recordIndex === -1) return;
@@ -1488,12 +1489,8 @@ updateInstallmentRecords: async (id, updates) => {
         }
     }
 },
-    Storage.saveUserData(App.currentUser.email, App.currentData);
-    App.closeModal('record-modal');
-    App.renderDashboard();
-    Utils.showToast('Registro salvo com sucesso!');
-},
-            editRecord: (id) => {
+
+editRecord: (id) => {
     const r = App.currentData.records.find(rec => rec.id === id);
     if (!r) return;
 
