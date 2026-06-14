@@ -1575,6 +1575,23 @@ editRecord: (id) => {
     });
 },
 saveBudget: async () => {
+    const newBudgets = {};
+    document.querySelectorAll('.budget-input').forEach(input => {
+        const val = parseFloat(input.value);
+        if (val > 0) newBudgets[input.getAttribute('data-cat')] = val;
+    });
+    
+    App.currentData.budgets = newBudgets;
+    Storage.saveUserData(App.currentUser.email, App.currentData);
+    
+    // Sincronizar com Firebase
+    await FirebaseService.saveBudgets(App.currentUser.uid, newBudgets);
+    
+    App.closeModal('budget-modal');
+    App.renderDashboard();
+    Utils.showToast('Orçamentos atualizados!');
+},
+
 // Deletar orçamento
 deleteBudget: (category) => {
     if (confirm(`Deseja remover o orçamento de ${category}?`)) {
@@ -1585,6 +1602,7 @@ deleteBudget: (category) => {
         Utils.showToast('Orçamento removido!');
     }
 },
+
 // Editar orçamento
 editBudget: (category) => {
     const currentBudget = App.currentData.budgets[category] || 0;
