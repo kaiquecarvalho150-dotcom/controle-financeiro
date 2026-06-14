@@ -1437,6 +1437,12 @@
             }
         }
     }
+
+    Storage.saveUserData(App.currentUser.email, App.currentData);
+    App.closeModal('record-modal');
+    App.renderDashboard();
+    Utils.showToast('Registro salvo com sucesso!');
+},
 // Atualizar apenas um registro
 updateSingleRecord: async (id, updates) => {
     const idx = App.currentData.records.findIndex(r => r.id === id);
@@ -1509,14 +1515,14 @@ updateInstallmentRecords: async (id, updates) => {
     App.openModal('record-modal');
 },
             deleteRecord: async (id) => {
-                if (confirm('Tem certeza que deseja excluir este registro?')) {
-                    App.currentData.records = App.currentData.records.filter(r => r.id !== id);
-                    Storage.saveUserData(App.currentUser.email, App.currentData);
-                    await FirebaseService.deleteRecord(App.currentUser.uid, id);
-                    App.renderDashboard();
-                    Utils.showToast('Registro excluído.');
-                }
-            },
+    if (confirm('Tem certeza que deseja excluir este registro?')) {
+        App.currentData.records = App.currentData.records.filter(r => r.id !== id);
+        Storage.saveUserData(App.currentUser.email, App.currentData);
+        await FirebaseService.deleteRecord(App.currentUser.uid, id);
+        App.renderDashboard();
+        Utils.showToast('Registro excluído.');
+    }
+},
             toggleStatus: async (id) => {
     const record = App.currentData.records.find(r => r.id === id);
     if (record) {
@@ -1527,7 +1533,7 @@ updateInstallmentRecords: async (id, updates) => {
         const statusText = record.status ? (record.type === 'income' ? 'Recebido' : 'Pago') : 'Pendente';
         Utils.showToast(`Status alterado para: ${statusText}`);
     }
-},  
+},
             loadBudgetForm: () => {
     const budgets = App.currentData.budgets || {};
     document.querySelectorAll('.budget-input').forEach(input => {
@@ -1535,7 +1541,6 @@ updateInstallmentRecords: async (id, updates) => {
         input.value = budgets[cat] || '';
     });
 },
-
 saveBudget: async () => {
     const newBudgets = {};
     document.querySelectorAll('.budget-input').forEach(input => {
