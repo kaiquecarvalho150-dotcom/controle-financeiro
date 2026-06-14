@@ -1321,26 +1321,42 @@
                 App.renderTransactions(monthRecords);
             },
             renderBudgets: (categoryExpenses) => {
-                const budgets = App.currentData.budgets || {};
-                const listEl = document.getElementById('budget-list');
-                listEl.innerHTML = '';
-                const catsWithBudget = Object.keys(budgets).filter(cat => budgets[cat] > 0);
-                if (catsWithBudget.length === 0) {
-                    listEl.innerHTML = `<div class="empty-state"><i class="fas fa-wallet"></i><p>Nenhum orçamento definido. Clique no + para definir.</p></div>`;
-                    return;
-                }
-                const icons = { 'Alimentação': '🍽️', 'Moradia': '🏠', 'Transporte': '🚗', 'Lazer': '🎮', 'Saúde': '💊', 'Educação': '📚', 'Outros': '📦' };
-                catsWithBudget.forEach(cat => {
-                    const limit = budgets[cat];
-                    const spent = categoryExpenses[cat] || 0;
-                    const percentage = Math.min((spent / limit) * 100, 100);
-                    const color = percentage >= 90 ? 'var(--danger)' : (percentage >= 70 ? 'var(--warning)' : 'var(--success)');
-                    const item = document.createElement('div');
-                    item.className = 'budget-item';
-                    item.innerHTML = `<div class="budget-header"><span class="budget-cat">${icons[cat] || '📦'} ${cat}</span><span class="budget-values"><strong>${Utils.formatCurrency(spent)}</strong> / ${Utils.formatCurrency(limit)}</span></div><div class="progress-bar"><div class="progress-fill" style="width: ${percentage}%; background: ${color};"></div></div>`;
-                    listEl.appendChild(item);
-                });
-            },
+    const budgets = App.currentData.budgets || {};
+    const listEl = document.getElementById('budget-list');
+    listEl.innerHTML = '';
+    const catsWithBudget = Object.keys(budgets).filter(cat => budgets[cat] > 0);
+    if (catsWithBudget.length === 0) {
+        listEl.innerHTML = `<div class="empty-state"><i class="fas fa-wallet"></i><p>Nenhum orçamento definido. Clique no + para definir.</p></div>`;
+        return;
+    }
+    const icons = { 'Alimentação': '🍽️', 'Moradia': '🏠', 'Transporte': '🚗', 'Lazer': '🎮', 'Saúde': '💊', 'Educação': '📚', 'Outros': '📦' };
+    catsWithBudget.forEach(cat => {
+        const limit = budgets[cat];
+        const spent = categoryExpenses[cat] || 0;
+        const percentage = Math.min((spent / limit) * 100, 100);
+        const color = percentage >= 90 ? 'var(--danger)' : (percentage >= 70 ? 'var(--warning)' : 'var(--success)');
+        const item = document.createElement('div');
+        item.className = 'budget-item';
+        item.innerHTML = `
+            <div class="budget-header">
+                <span class="budget-cat">${icons[cat] || '📦'} ${cat}</span>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <span class="budget-values"><strong>${Utils.formatCurrency(spent)}</strong> / ${Utils.formatCurrency(limit)}</span>
+                    <button class="btn btn-icon btn-sm btn-ghost" onclick="App.editBudget('${cat}')" title="Editar">
+                        <i class="fas fa-pen"></i>
+                    </button>
+                    <button class="btn btn-icon btn-sm btn-ghost text-danger" onclick="App.deleteBudget('${cat}')" title="Excluir">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: ${percentage}%; background: ${color};"></div>
+            </div>
+        `;
+        listEl.appendChild(item);
+    });
+},
             renderTransactions: (records) => {
                 const listEl = document.getElementById('transaction-list');
                 listEl.innerHTML = '';
@@ -1395,19 +1411,19 @@
         return; 
     }
 
-    // Se for edição de registro parcelado, perguntar
-    if (id && isInstallment) {
-        const editAll = confirm('Deseja editar APENAS este registro?\n\nClique em OK para editar apenas este.\nClique em Cancelar para editar este e os próximos registros parcelados.');
+    // Se for edição de registro parcelado ou fixo, perguntar
+    if (id && (isInstallment || repeat === 'fixed')) {
+        const editAll = confirm('Deseja editar APENAS este registro?\n\nClique em OK para editar apenas este.\nClique em Cancelar para editar este e os próximos registros (fixos ou parcelados).');
         
         if (editAll) {
             // Editar apenas este
             await App.updateSingleRecord(id, { type, description: desc, value, date, category, status, repeat: 'none', notes });
         } else {
-            // Editar este e os próximos
-            await App.updateInstallmentRecords(id, { type, description: desc, value, date, category, status, notes });
+            // Editar este e os próximos (fixos ou parcelados)
+            await App.updateRecurringRecords(id, { type, description: desc, value, date, category, status, notes, repeat });
         }
     } else if (id) {
-        // Edição simples (não parcelado)
+        // Edição simples (não recorrente)
         await App.updateSingleRecord(id, { type, description: desc, value, date, category, status, repeat: 'none', notes });
     } else {
         // Novo registro
@@ -1452,41 +1468,61 @@ updateSingleRecord: async (id, updates) => {
     }
 },
 
-// Atualizar registro parcelado e os próximos
-// Atualizar registro parcelado e os próximos
-updateInstallmentRecords: async (id, updates) => {
+// Atualizar registro e os próximos (parcelados ou fixos)
+updateRecurringRecords: async (id, updates) => {
     const recordIndex = App.currentData.records.findIndex(r => r.id === id);
     if (recordIndex === -1) return;
 
     const originalRecord = App.currentData.records[recordIndex];
+    
+    // Verificar se é parcelado
     const match = originalRecord.description.match(/\((\d+)\/(\d+)\)/);
     
-    if (!match) {
-        // Não é parcelado, atualiza só este
-        await App.updateSingleRecord(id, updates);
-        return;
-    }
+    if (match) {
+        // É parcelado - atualizar deste em diante
+        const currentParcel = parseInt(match[1]);
+        const totalParcels = parseInt(match[2]);
+        const baseDesc = updates.description;
 
-    const currentParcel = parseInt(match[1]);
-    const totalParcels = parseInt(match[2]);
-    const baseDesc = originalRecord.description.replace(/\s\(\d+\/\d+\)$/, '');
+        for (let i = currentParcel; i <= totalParcels; i++) {
+            const recordToUpdate = App.currentData.records.find(r => {
+                const rMatch = r.description.match(/\((\d+)\/(\d+)\)/);
+                return rMatch && parseInt(rMatch[1]) === i && r.description.includes(baseDesc);
+            });
 
-    // Atualizar deste em diante
-    for (let i = currentParcel; i <= totalParcels; i++) {
-        const recordToUpdate = App.currentData.records.find(r => {
-            const rMatch = r.description.match(/\((\d+)\/(\d+)\)/);
-            return rMatch && parseInt(rMatch[1]) === i && r.description.includes(baseDesc);
+            if (recordToUpdate) {
+                const updatedDesc = i === currentParcel ? baseDesc : `${baseDesc} (${i}/${totalParcels})`;
+                recordToUpdate.description = updatedDesc;
+                recordToUpdate.value = updates.value;
+                recordToUpdate.category = updates.category;
+                recordToUpdate.notes = updates.notes;
+                
+                await FirebaseService.saveRecord(App.currentUser.uid, recordToUpdate);
+            }
+        }
+    } else if (originalRecord.repeat === 'fixed' || updates.repeat === 'fixed') {
+        // É fixo - atualizar todos os registros fixos com mesma descrição a partir desta data
+        const baseDesc = updates.description;
+        const startDate = new Date(updates.date);
+        
+        const recordsToUpdate = App.currentData.records.filter(r => {
+            const recordDate = new Date(r.date);
+            return r.description.includes(originalRecord.description.replace(/\s\(\d+\/\d+\)$/, '')) && 
+                   r.repeat === 'fixed' && 
+                   recordDate >= startDate;
         });
 
-        if (recordToUpdate) {
-            const updatedDesc = i === currentParcel ? updates.description : `${updates.description} (${i}/${totalParcels})`;
-            recordToUpdate.description = updatedDesc;
+        for (const recordToUpdate of recordsToUpdate) {
+            recordToUpdate.description = baseDesc;
             recordToUpdate.value = updates.value;
             recordToUpdate.category = updates.category;
             recordToUpdate.notes = updates.notes;
             
             await FirebaseService.saveRecord(App.currentUser.uid, recordToUpdate);
         }
+    } else {
+        // Não é parcelado nem fixo, atualiza só este
+        await App.updateSingleRecord(id, updates);
     }
 },
 
@@ -1502,11 +1538,11 @@ editRecord: (id) => {
     document.getElementById('record-date').value = r.date;
     document.getElementById('record-category').value = r.category;
     document.getElementById('record-status').checked = r.status;
-    document.getElementById('record-repeat').value = 'none';
+    document.getElementById('record-repeat').value = r.repeat;
     App.toggleRepeatOptions();
     document.getElementById('record-notes').value = r.notes || '';
     
-    // Armazenar se é parcelado para usar na confirmação
+    // Armazenar se é parcelado ou fixo para usar na confirmação
     document.getElementById('record-form').dataset.isInstallment = r.repeat === 'installment' ? 'true' : 'false';
 
     App.openModal('record-modal');
@@ -1539,6 +1575,41 @@ editRecord: (id) => {
     });
 },
 saveBudget: async () => {
+// Deletar orçamento
+deleteBudget: (category) => {
+    if (confirm(`Deseja remover o orçamento de ${category}?`)) {
+        delete App.currentData.budgets[category];
+        Storage.saveUserData(App.currentUser.email, App.currentData);
+        FirebaseService.saveBudgets(App.currentUser.uid, App.currentData.budgets);
+        App.renderDashboard();
+        Utils.showToast('Orçamento removido!');
+    }
+},
+// Editar orçamento
+editBudget: (category) => {
+    const currentBudget = App.currentData.budgets[category] || 0;
+    const newValue = prompt(`Editar orçamento de ${category}:\n\nValor atual: ${Utils.formatCurrency(currentBudget)}`, currentBudget);
+    
+    if (newValue !== null) {
+        const parsedValue = parseFloat(newValue);
+        if (!isNaN(parsedValue) && parsedValue > 0) {
+            App.currentData.budgets[category] = parsedValue;
+            Storage.saveUserData(App.currentUser.email, App.currentData);
+            FirebaseService.saveBudgets(App.currentUser.uid, App.currentData.budgets);
+            App.renderDashboard();
+            Utils.showToast('Orçamento atualizado!');
+        } else if (parsedValue === 0) {
+            // Se digitou 0, remove o orçamento
+            delete App.currentData.budgets[category];
+            Storage.saveUserData(App.currentUser.email, App.currentData);
+            FirebaseService.saveBudgets(App.currentUser.uid, App.currentData.budgets);
+            App.renderDashboard();
+            Utils.showToast('Orçamento removido!');
+        } else {
+            Utils.showToast('Valor inválido!', 'error');
+        }
+    }
+},
     const newBudgets = {};
     document.querySelectorAll('.budget-input').forEach(input => {
         const val = parseFloat(input.value);
