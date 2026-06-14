@@ -859,8 +859,187 @@
         </div>
     </div>
 
-    <!-- MODAIS (mesmo código dos modais anteriores - omitido para economizar espaço) -->
-    <!-- Adicione todos os modais aqui (record-modal, budget-modal, report-modal, settings-modal) -->
+    <!-- MODAL: NOVO REGISTRO -->
+<div class="modal-overlay" id="record-modal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3><i class="fas fa-plus-circle" style="color: var(--accent-primary); margin-right: 0.5rem;"></i>Novo Registro</h3>
+            <button class="btn btn-icon btn-ghost" onclick="App.closeModal('record-modal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <form id="record-form">
+                <input type="hidden" id="record-id">
+                <div class="type-selector">
+                    <label class="type-option active expense" id="type-expense-label">
+                        <input type="radio" name="type" value="expense" checked onchange="App.toggleType(this)">
+                        <i class="fas fa-arrow-down"></i> Despesa
+                    </label>
+                    <label class="type-option income" id="type-income-label">
+                        <input type="radio" name="type" value="income" onchange="App.toggleType(this)">
+                        <i class="fas fa-arrow-up"></i> Receita
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Descrição</label>
+                    <input type="text" class="form-input" id="record-desc" required placeholder="Ex: Aluguel, Salário">
+                </div>
+                <div class="flex gap-3">
+                    <div class="form-group w-full">
+                        <label class="form-label">Valor (R$)</label>
+                        <input type="number" step="0.01" class="form-input" id="record-value" required placeholder="0,00">
+                    </div>
+                    <div class="form-group w-full">
+                        <label class="form-label">Data</label>
+                        <input type="date" class="form-input" id="record-date" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Categoria</label>
+                    <select class="form-select" id="record-category" required>
+                        <option value="Alimentação">🍽️ Alimentação</option>
+                        <option value="Moradia">🏠 Moradia</option>
+                        <option value="Transporte">🚗 Transporte</option>
+                        <option value="Saúde">💊 Saúde</option>
+                        <option value="Educação">📚 Educação</option>
+                        <option value="Lazer">🎮 Lazer</option>
+                        <option value="Salário">💰 Salário</option>
+                        <option value="Investimentos">📈 Investimentos</option>
+                        <option value="Outros">📦 Outros</option>
+                    </select>
+                </div>
+                <div class="toggle-wrapper">
+                    <label><i class="fas fa-check-circle" style="margin-right: 0.5rem; color: var(--success);"></i>Marcar como Pago/Recebido</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="record-status">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Repetição</label>
+                    <select class="form-select" id="record-repeat" onchange="App.toggleRepeatOptions()">
+                        <option value="none">Não repetir</option>
+                        <option value="fixed">🔄 Fixo (Mensal)</option>
+                        <option value="installment">📊 Parcelado</option>
+                    </select>
+                </div>
+                <div class="form-group hidden" id="installment-group">
+                    <label class="form-label">Número de Parcelas</label>
+                    <input type="number" class="form-input" id="record-parcels" min="2" value="2">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Anotações (Opcional)</label>
+                    <textarea class="form-input form-textarea" id="record-notes" rows="2" placeholder="Observações adicionais..."></textarea>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="App.closeModal('record-modal')">Cancelar</button>
+            <button class="btn btn-primary" onclick="App.saveRecord()"><i class="fas fa-save"></i> Salvar</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: ORÇAMENTO -->
+<div class="modal-overlay" id="budget-modal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3><i class="fas fa-wallet" style="color: var(--accent-primary); margin-right: 0.5rem;"></i>Definir Orçamentos</h3>
+            <button class="btn btn-icon btn-ghost" onclick="App.closeModal('budget-modal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <p class="text-muted mb-4" style="font-size: 0.9rem;">Defina limites de gastos mensais por categoria.</p>
+            <form id="budget-form">
+                <div class="form-group">
+                    <label class="form-label">🍽️ Alimentação</label>
+                    <input type="number" step="0.01" class="form-input budget-input" data-cat="Alimentação" placeholder="R$ 0,00">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">🏠 Moradia</label>
+                    <input type="number" step="0.01" class="form-input budget-input" data-cat="Moradia" placeholder="R$ 0,00">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">🚗 Transporte</label>
+                    <input type="number" step="0.01" class="form-input budget-input" data-cat="Transporte" placeholder="R$ 0,00">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">🎮 Lazer</label>
+                    <input type="number" step="0.01" class="form-input budget-input" data-cat="Lazer" placeholder="R$ 0,00">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">💊 Saúde</label>
+                    <input type="number" step="0.01" class="form-input budget-input" data-cat="Saúde" placeholder="R$ 0,00">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">📚 Educação</label>
+                    <input type="number" step="0.01" class="form-input budget-input" data-cat="Educação" placeholder="R$ 0,00">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">📦 Outros</label>
+                    <input type="number" step="0.01" class="form-input budget-input" data-cat="Outros" placeholder="R$ 0,00">
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="App.closeModal('budget-modal')">Cancelar</button>
+            <button class="btn btn-primary" onclick="App.saveBudget()"><i class="fas fa-save"></i> Salvar</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: RELATÓRIOS -->
+<div class="modal-overlay" id="report-modal">
+    <div class="modal large">
+        <div class="modal-header">
+            <h3><i class="fas fa-chart-column" style="color: var(--accent-primary); margin-right: 0.5rem;"></i>Relatórios Financeiros</h3>
+            <button class="btn btn-icon btn-ghost" onclick="App.closeModal('report-modal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <div class="filter-group">
+                <button class="filter-btn" data-period="7days" onclick="App.renderReport('7days')">7 Dias</button>
+                <button class="filter-btn active" data-period="6months" onclick="App.renderReport('6months')">6 Meses</button>
+                <button class="filter-btn" data-period="5years" onclick="App.renderReport('5years')">5 Anos</button>
+            </div>
+            <div style="height: 320px; position: relative;">
+                <canvas id="reportChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: CONFIGURAÇÕES -->
+<div class="modal-overlay" id="settings-modal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3><i class="fas fa-gear" style="color: var(--accent-primary); margin-right: 0.5rem;"></i>Configurações</h3>
+            <button class="btn btn-icon btn-ghost" onclick="App.closeModal('settings-modal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <form id="settings-form">
+                <div class="form-group">
+                    <label class="form-label">Nome</label>
+                    <input type="text" class="form-input" id="setting-name">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nova Senha <span class="text-muted" style="font-weight: 400;">(deixe em branco para manter)</span></label>
+                    <div class="password-wrapper">
+                        <input type="password" class="form-input" id="setting-password" placeholder="••••••••">
+                        <button type="button" class="password-toggle" onclick="togglePassword('setting-password', this)">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 1.5rem 0;">
+                <button type="button" class="btn btn-danger w-full" onclick="App.deleteAccount()">
+                    <i class="fas fa-trash-alt"></i> Excluir Conta Permanentemente
+                </button>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="App.closeModal('settings-modal')">Cancelar</button>
+            <button class="btn btn-primary" onclick="App.saveSettings()"><i class="fas fa-save"></i> Salvar</button>
+        </div>
+    </div>
+</div>
 
     <div id="toast" class="toast"></div>
 
@@ -885,50 +1064,57 @@
            FIREBASE SERVICE
            ============================================ */
         const FirebaseService = {
-            saveRecord: async (userId, record) => {
-                try {
-                    await db.collection('users').doc(userId).collection('records').doc(record.id).set({
-                        ...record,
-                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                    console.log('✅ Registro salvo na nuvem');
-                } catch (error) {
-                    console.error('❌ Erro ao salvar:', error);
-                }
-            },
-            deleteRecord: async (userId, recordId) => {
-                try {
-                    await db.collection('users').doc(userId).collection('records').doc(recordId).delete();
-                    console.log('🗑️ Registro deletado da nuvem');
-                } catch (error) {
-                    console.error('❌ Erro ao deletar:', error);
-                }
-            },
-            saveBudgets: async (userId, budgets) => {
-                try {
-                    await db.collection('users').doc(userId).doc('budgets').set({
-                        data: budgets,
-                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                    console.log('✅ Orçamentos salvos na nuvem');
-                } catch (error) {
-                    console.error('❌ Erro ao salvar orçamentos:', error);
-                }
-            },
-            loadAllData: async (userId) => {
-                try {
-                    const recordsSnapshot = await db.collection('users').doc(userId).collection('records').get();
-                    const records = [];
-                    recordsSnapshot.forEach(doc => { records.push(doc.data()); });
-                    const budgetsDoc = await db.collection('users').doc(userId).doc('budgets').get();
-                    const budgets = budgetsDoc.exists ? budgetsDoc.data().data : {};
-                    return { records, budgets };
-                } catch (error) {
-                    console.error('❌ Erro ao carregar dados:', error);
-                    return null;
-                }
-            }
-        };
+    saveRecord: async (userId, record) => {
+        try {
+            await db.collection('users').doc(userId).collection('records').doc(record.id).set({
+                ...record,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            console.log('✅ Registro salvo na nuvem');
+        } catch (error) {
+            console.error('❌ Erro ao salvar:', error);
+        }
+    },
+
+    deleteRecord: async (userId, recordId) => {
+        try {
+            await db.collection('users').doc(userId).collection('records').doc(recordId).delete();
+            console.log('🗑️ Registro deletado da nuvem');
+        } catch (error) {
+            console.error('❌ Erro ao deletar:', error);
+        }
+    },
+
+    saveBudgets: async (userId, budgets) => {
+        try {
+            await db.collection('users').doc(userId).doc('budgets').set({
+                data: budgets,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            console.log('✅ Orçamentos salvos na nuvem');
+        } catch (error) {
+            console.error('❌ Erro ao salvar orçamentos:', error);
+        }
+    },
+
+    loadAllData: async (userId) => {
+        try {
+            const recordsSnapshot = await db.collection('users').doc(userId).collection('records').get();
+            const records = [];
+            recordsSnapshot.forEach(doc => {
+                records.push(doc.data());
+            });
+
+            const budgetsDoc = await db.collection('users').doc(userId).doc('budgets').get();
+            const budgets = budgetsDoc.exists ? budgetsDoc.data().data : {};
+
+            return { records, budgets };
+        } catch (error) {
+            console.error('❌ Erro ao carregar dados:', error);
+            return { records: [], budgets: {} };
+        }
+    }
+};
 
         const Theme = {
             current: localStorage.getItem('cf_theme') || 'light',
