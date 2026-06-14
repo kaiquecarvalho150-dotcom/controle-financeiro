@@ -1574,6 +1574,7 @@ editRecord: (id) => {
         input.value = budgets[cat] || '';
     });
 },
+
 saveBudget: async () => {
     const newBudgets = {};
     document.querySelectorAll('.budget-input').forEach(input => {
@@ -1617,7 +1618,6 @@ editBudget: (category) => {
             App.renderDashboard();
             Utils.showToast('Orçamento atualizado!');
         } else if (parsedValue === 0) {
-            // Se digitou 0, remove o orçamento
             delete App.currentData.budgets[category];
             Storage.saveUserData(App.currentUser.email, App.currentData);
             FirebaseService.saveBudgets(App.currentUser.uid, App.currentData.budgets);
