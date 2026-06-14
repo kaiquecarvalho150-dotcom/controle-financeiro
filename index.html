@@ -1447,15 +1447,12 @@
     if (record) {
         record.status = !record.status;
         Storage.saveUserData(App.currentUser.email, App.currentData);
-        
-        // Sincronizar com Firebase
         await FirebaseService.saveRecord(App.currentUser.uid, record);
-        
         App.renderDashboard();
         const statusText = record.status ? (record.type === 'income' ? 'Recebido' : 'Pago') : 'Pendente';
         Utils.showToast(`Status alterado para: ${statusText}`);
     }
-}},
+},  
             loadBudgetForm: () => {
                 const budgets = App.currentData.budgets || {};
                 document.querySelectorAll('.budget-input').forEach(input => { input.value = budgets[input.getAttribute('data-cat')] || ''; });
