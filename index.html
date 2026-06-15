@@ -850,6 +850,7 @@
         </div>
     </div>
 
+    <!-- MODAIS (mesmo código anterior) -->
     <div class="modal-overlay" id="record-modal">
         <div class="modal">
             <div class="modal-header">
@@ -1299,16 +1300,20 @@
                 const listEl = document.getElementById('budget-list');
                 listEl.innerHTML = '';
                 const catsWithBudget = Object.keys(budgets).filter(cat => budgets[cat] > 0);
+                
                 if (catsWithBudget.length === 0) {
                     listEl.innerHTML = `<div class="empty-state"><i class="fas fa-wallet"></i><p>Nenhum orçamento definido. Clique no + para definir.</p></div>`;
                     return;
                 }
+                
                 const icons = { 'Alimentação': '🍽️', 'Moradia': '🏠', 'Transporte': '🚗', 'Lazer': '🎮', 'Saúde': '💊', 'Educação': '📚', 'Outros': '📦' };
+                
                 catsWithBudget.forEach(cat => {
                     const limit = budgets[cat];
                     const spent = categoryExpenses[cat] || 0;
                     const percentage = Math.min((spent / limit) * 100, 100);
                     const color = percentage >= 90 ? 'var(--danger)' : (percentage >= 70 ? 'var(--warning)' : 'var(--success)');
+                    
                     const item = document.createElement('div');
                     item.className = 'budget-item';
                     item.innerHTML = `
