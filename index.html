@@ -1296,46 +1296,50 @@
                 App.renderTransactions(monthRecords);
             },
             renderBudgets: (categoryExpenses) => {
-                const budgets = App.currentData.budgets || {};
-                const listEl = document.getElementById('budget-list');
-                listEl.innerHTML = '';
-                const catsWithBudget = Object.keys(budgets).filter(cat => budgets[cat] > 0);
-                
-                if (catsWithBudget.length === 0) {
-                    listEl.innerHTML = `<div class="empty-state"><i class="fas fa-wallet"></i><p>Nenhum orçamento definido. Clique no + para definir.</p></div>`;
-                    return;
-                }
-                
-                const icons = { 'Alimentação': '🍽️', 'Moradia': '🏠', 'Transporte': '🚗', 'Lazer': '🎮', 'Saúde': '💊', 'Educação': '📚', 'Outros': '📦' };
-                
-                catsWithBudget.forEach(cat => {
-                    const limit = budgets[cat];
-                    const spent = categoryExpenses[cat] || 0;
-                    const percentage = Math.min((spent / limit) * 100, 100);
-                    const color = percentage >= 90 ? 'var(--danger)' : (percentage >= 70 ? 'var(--warning)' : 'var(--success)');
-                    
-                    const item = document.createElement('div');
-                    item.className = 'budget-item';
-                    item.innerHTML = `
-                        <div class="budget-header">
-                            <span class="budget-cat">${icons[cat] || '📦'} ${cat}</span>
-                            <div style="display: flex; gap: 0.5rem; align-items: center;">
-                                <span class="budget-values"><strong>${Utils.formatCurrency(spent)}</strong> / ${Utils.formatCurrency(limit)}</span>
-                                <button class="btn btn-icon btn-sm btn-ghost" onclick="App.editBudget('${cat}')" title="Editar">
-                                    <i class="fas fa-pen"></i>
-                                </button>
-                                <button class="btn btn-icon btn-sm btn-ghost text-danger" onclick="App.deleteBudget('${cat}')" title="Excluir">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${percentage}%; background: ${color};"></div>
-                        </div>
-                    `;
-                    listEl.appendChild(item);
-                });
-            },
+    const budgets = App.currentData.budgets || {};
+    const listEl = document.getElementById('budget-list');
+    listEl.innerHTML = '';
+    const catsWithBudget = Object.keys(budgets).filter(cat => budgets[cat] > 0);
+    
+    if (catsWithBudget.length === 0) {
+        listEl.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-wallet" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                <p>Nenhum orçamento definido. Clique no + para definir.</p>
+            </div>`;
+        return;
+    }
+    
+    const icons = { 'Alimentação': '🍽️', 'Moradia': '🏠', 'Transporte': '🚗', 'Lazer': '🎮', 'Saúde': '💊', 'Educação': '📚', 'Outros': '📦' };
+    
+    catsWithBudget.forEach(cat => {
+        const limit = budgets[cat];
+        const spent = categoryExpenses[cat] || 0;
+        const percentage = Math.min((spent / limit) * 100, 100);
+        const color = percentage >= 90 ? 'var(--danger)' : (percentage >= 70 ? 'var(--warning)' : 'var(--success)');
+        
+        const item = document.createElement('div');
+        item.className = 'budget-item';
+        item.innerHTML = `
+            <div class="budget-header">
+                <span class="budget-cat">${icons[cat] || '📦'} ${cat}</span>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <span class="budget-values"><strong>${Utils.formatCurrency(spent)}</strong> / ${Utils.formatCurrency(limit)}</span>
+                    <button class="btn btn-icon btn-sm btn-ghost" onclick="App.editBudget('${cat}')" title="Editar">
+                        <i class="fas fa-pen"></i>
+                    </button>
+                    <button class="btn btn-icon btn-sm btn-ghost text-danger" onclick="App.deleteBudget('${cat}')" title="Excluir">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: ${percentage}%; background: ${color};"></div>
+            </div>
+        `;
+        listEl.appendChild(item);
+    });
+},
             renderTransactions: (records) => {
                 const listEl = document.getElementById('transaction-list');
                 listEl.innerHTML = '';
@@ -1550,59 +1554,60 @@
                 }
             },
             loadBudgetForm: () => {
-                const budgets = App.currentData.budgets || {};
-                document.querySelectorAll('.budget-input').forEach(input => {
-                    const cat = input.getAttribute('data-cat');
-                    input.value = budgets[cat] || '';
-                });
-            },
+    const budgets = App.currentData.budgets || {};
+    document.querySelectorAll('.budget-input').forEach(input => {
+        const cat = input.getAttribute('data-cat');
+        input.value = budgets[cat] || '';
+    });
+},
             saveBudget: async () => {
-                const newBudgets = {};
-                document.querySelectorAll('.budget-input').forEach(input => {
-                    const val = parseFloat(input.value);
-                    if (val > 0) newBudgets[input.getAttribute('data-cat')] = val;
-                });
-                
-                App.currentData.budgets = newBudgets;
-                Storage.saveUserData(App.currentUser.email, App.currentData);
-                await FirebaseService.saveBudgets(App.currentUser.uid, newBudgets);
-                
-                App.closeModal('budget-modal');
-                App.renderDashboard();
-                Utils.showToast('Orçamentos atualizados!');
-            },
+    const newBudgets = {};
+    document.querySelectorAll('.budget-input').forEach(input => {
+        const val = parseFloat(input.value);
+        if (val > 0) newBudgets[input.getAttribute('data-cat')] = val;
+    });
+    
+    App.currentData.budgets = newBudgets;
+    Storage.saveUserData(App.currentUser.email, App.currentData);
+    await FirebaseService.saveBudgets(App.currentUser.uid, newBudgets);
+    
+    App.closeModal('budget-modal');
+    App.renderDashboard();
+    Utils.showToast('Orçamentos atualizados!');
+},
             deleteBudget: (category) => {
-                if (confirm(`Deseja remover o orçamento de ${category}?`)) {
-                    delete App.currentData.budgets[category];
-                    Storage.saveUserData(App.currentUser.email, App.currentData);
-                    FirebaseService.saveBudgets(App.currentUser.uid, App.currentData.budgets);
-                    App.renderDashboard();
-                    Utils.showToast('Orçamento removido!');
-                }
-            },
-            editBudget: (category) => {
-                const currentBudget = App.currentData.budgets[category] || 0;
-                const newValue = prompt(`Editar orçamento de ${category}:\n\nValor atual: ${Utils.formatCurrency(currentBudget)}`, currentBudget);
-                
-                if (newValue !== null) {
-                    const parsedValue = parseFloat(newValue);
-                    if (!isNaN(parsedValue) && parsedValue > 0) {
-                        App.currentData.budgets[category] = parsedValue;
-                        Storage.saveUserData(App.currentUser.email, App.currentData);
-                        FirebaseService.saveBudgets(App.currentUser.uid, App.currentData.budgets);
-                        App.renderDashboard();
-                        Utils.showToast('Orçamento atualizado!');
-                    } else if (parsedValue === 0) {
-                        delete App.currentData.budgets[category];
-                        Storage.saveUserData(App.currentUser.email, App.currentData);
-                        FirebaseService.saveBudgets(App.currentUser.uid, App.currentData.budgets);
-                        App.renderDashboard();
-                        Utils.showToast('Orçamento removido!');
-                    } else {
-                        Utils.showToast('Valor inválido!', 'error');
-                    }
-                }
-            },
+    if (confirm(`Deseja remover o orçamento de ${category}?`)) {
+        delete App.currentData.budgets[category];
+        Storage.saveUserData(App.currentUser.email, App.currentData);
+        FirebaseService.saveBudgets(App.currentUser.uid, App.currentData.budgets);
+        App.renderDashboard();
+        Utils.showToast('Orçamento removido!');
+    }
+},
+
+editBudget: (category) => {
+    const currentBudget = App.currentData.budgets[category] || 0;
+    const newValue = prompt(`Editar orçamento de ${category}:\n\nValor atual: ${Utils.formatCurrency(currentBudget)}`, currentBudget);
+    
+    if (newValue !== null) {
+        const parsedValue = parseFloat(newValue);
+        if (!isNaN(parsedValue) && parsedValue > 0) {
+            App.currentData.budgets[category] = parsedValue;
+            Storage.saveUserData(App.currentUser.email, App.currentData);
+            FirebaseService.saveBudgets(App.currentUser.uid, App.currentData.budgets);
+            App.renderDashboard();
+            Utils.showToast('Orçamento atualizado!');
+        } else if (parsedValue === 0) {
+            delete App.currentData.budgets[category];
+            Storage.saveUserData(App.currentUser.email, App.currentData);
+            FirebaseService.saveBudgets(App.currentUser.uid, App.currentData.budgets);
+            App.renderDashboard();
+            Utils.showToast('Orçamento removido!');
+        } else {
+            Utils.showToast('Valor inválido!', 'error');
+        }
+    }
+},
             renderReport: (period) => {
                 document.querySelectorAll('.filter-btn').forEach(btn => { btn.classList.toggle('active', btn.getAttribute('data-period') === period); });
                 const records = App.currentData.records;
