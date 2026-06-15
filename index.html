@@ -1299,18 +1299,16 @@
     const budgets = App.currentData.budgets || {};
     const listEl = document.getElementById('budget-list');
     listEl.innerHTML = '';
+    
+    // Filtra apenas orçamentos com valor > 0
     const catsWithBudget = Object.keys(budgets).filter(cat => budgets[cat] > 0);
     
     if (catsWithBudget.length === 0) {
-        listEl.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-wallet" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
-                <p>Nenhum orçamento definido. Clique no + para definir.</p>
-            </div>`;
+        listEl.innerHTML = `<div class="empty-state"><i class="fas fa-wallet"></i><p>Nenhum orçamento definido. Clique no + para definir.</p></div>`;
         return;
     }
     
-    const icons = { 'Alimentação': '🍽️', 'Moradia': '🏠', 'Transporte': '🚗', 'Lazer': '🎮', 'Saúde': '💊', 'Educação': '📚', 'Outros': '📦' };
+    const icons = { 'Alimentação': '🍽️', 'Moradia': '🏠', 'Transporte': '', 'Lazer': '🎮', 'Saúde': '💊', 'Educação': '📚', 'Outros': '' };
     
     catsWithBudget.forEach(cat => {
         const limit = budgets[cat];
@@ -1325,10 +1323,10 @@
                 <span class="budget-cat">${icons[cat] || '📦'} ${cat}</span>
                 <div style="display: flex; gap: 0.5rem; align-items: center;">
                     <span class="budget-values"><strong>${Utils.formatCurrency(spent)}</strong> / ${Utils.formatCurrency(limit)}</span>
-                    <button class="btn btn-icon btn-sm btn-ghost" onclick="App.editBudget('${cat}')" title="Editar">
+                    <button class="btn btn-icon btn-sm btn-ghost" onclick="App.editBudget('${cat}')" title="Editar nome e valor">
                         <i class="fas fa-pen"></i>
                     </button>
-                    <button class="btn btn-icon btn-sm btn-ghost text-danger" onclick="App.deleteBudget('${cat}')" title="Excluir">
+                    <button class="btn btn-icon btn-sm btn-ghost text-danger" onclick="App.deleteBudget('${cat}')" title="Excluir orçamento">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -1575,38 +1573,56 @@
     App.renderDashboard();
     Utils.showToast('Orçamentos atualizados!');
 },
-            deleteBudget: (category) => {
-    if (confirm(`Deseja remover o orçamento de ${category}?`)) {
+            deleteBudget: async (category) => {
+    if (confirm(`Deseja excluir completamente o orçamento de "${category}"?\n\nEle não aparecerá mais na lista até que você crie um novo.`)) {
         delete App.currentData.budgets[category];
         Storage.saveUserData(App.currentUser.email, App.currentData);
-        FirebaseService.saveBudgets(App.currentUser.uid, App.currentData.budgets);
+        
+        try {
+            await FirebaseService.saveBudgets(App.currentUser.uid, App.currentData.budgets);
+        } catch (e) {
+            console.error('Erro ao sincronizar exclusão:', e);
+        }
+        
         App.renderDashboard();
-        Utils.showToast('Orçamento removido!');
+        Utils.showToast('Orçamento excluído com sucesso!');
     }
 },
 
-editBudget: (category) => {
-    const currentBudget = App.currentData.budgets[category] || 0;
-    const newValue = prompt(`Editar orçamento de ${category}:\n\nValor atual: ${Utils.formatCurrency(currentBudget)}`, currentBudget);
+editBudget: async (oldCategory) => {
+    // 1. Pergunta o novo nome
+    const newCategory = prompt("Digite o nome da categoria (ex: Mercado, Uber, Aluguel):", oldCategory);
+    if (newCategory === null) return; // Cancelou
+    const cleanName = newCategory.trim();
+    if (!cleanName) { Utils.showToast('Nome não pode ser vazio!', 'error'); return; }
+
+    // 2. Pergunta o novo valor
+    const currentVal = App.currentData.budgets[oldCategory] || 0;
+    const newValStr = prompt(`Defina o limite mensal para "${cleanName}":`, currentVal);
+    if (newValStr === null) return; // Cancelou
     
-    if (newValue !== null) {
-        const parsedValue = parseFloat(newValue);
-        if (!isNaN(parsedValue) && parsedValue > 0) {
-            App.currentData.budgets[category] = parsedValue;
-            Storage.saveUserData(App.currentUser.email, App.currentData);
-            FirebaseService.saveBudgets(App.currentUser.uid, App.currentData.budgets);
-            App.renderDashboard();
-            Utils.showToast('Orçamento atualizado!');
-        } else if (parsedValue === 0) {
-            delete App.currentData.budgets[category];
-            Storage.saveUserData(App.currentUser.email, App.currentData);
-            FirebaseService.saveBudgets(App.currentUser.uid, App.currentData.budgets);
-            App.renderDashboard();
-            Utils.showToast('Orçamento removido!');
-        } else {
-            Utils.showToast('Valor inválido!', 'error');
-        }
+    // Aceita vírgula ou ponto
+    const newVal = parseFloat(newValStr.replace(',', '.'));
+    if (isNaN(newVal) || newVal < 0) {
+        Utils.showToast('Valor inválido! Use apenas números.', 'error');
+        return;
     }
+
+    // 3. Atualiza os dados
+    if (cleanName !== oldCategory) {
+        delete App.currentData.budgets[oldCategory]; // Remove o antigo se mudou o nome
+    }
+    App.currentData.budgets[cleanName] = newVal;
+
+    Storage.saveUserData(App.currentUser.email, App.currentData);
+    try {
+        await FirebaseService.saveBudgets(App.currentUser.uid, App.currentData.budgets);
+    } catch (e) {
+        console.error('Erro ao sincronizar edição:', e);
+    }
+
+    App.renderDashboard();
+    Utils.showToast('Orçamento atualizado!');
 },
             renderReport: (period) => {
                 document.querySelectorAll('.filter-btn').forEach(btn => { btn.classList.toggle('active', btn.getAttribute('data-period') === period); });
