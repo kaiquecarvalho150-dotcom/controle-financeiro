@@ -1340,16 +1340,18 @@
                 });
             },
             openModal: (id) => { 
-                document.getElementById(id).classList.add('active'); 
-                if (id === 'record-modal') App.resetRecordForm(); 
-				App.populateCategorySelect();
-                else if (id === 'budget-modal') App.loadBudgetForm(); 
-                else if (id === 'settings-modal') { 
-                    document.getElementById('setting-name').value = App.currentUser.name; 
-                    document.getElementById('setting-password').value = ''; 
-                } 
-                else if (id === 'report-modal') App.renderReport('6months'); 
-            },
+    document.getElementById(id).classList.add('active'); 
+    if (id === 'record-modal') {
+        App.resetRecordForm();
+        App.populateCategorySelect(); // ADICIONE ESTA LINHA
+    }
+    else if (id === 'budget-modal') App.loadBudgetForm(); 
+    else if (id === 'settings-modal') { 
+        document.getElementById('setting-name').value = App.currentUser.name; 
+        document.getElementById('setting-password').value = ''; 
+    } 
+    else if (id === 'report-modal') App.renderReport('6months'); 
+},
             closeModal: (id) => { document.getElementById(id).classList.remove('active'); },
             toggleType: (radio) => { 
                 document.querySelectorAll('.type-option').forEach(el => el.classList.remove('active')); 
