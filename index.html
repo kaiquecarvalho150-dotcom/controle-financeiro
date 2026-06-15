@@ -1323,7 +1323,7 @@
                     listEl.innerHTML = `<div class="empty-state"><i class="fas fa-receipt"></i><p>Nenhum registro neste período.</p></div>`;
                     return;
                 }
-                records.sort((a, b) => new Date(b.date) - new Date(a.date));
+                records.sort((a, b) => b.value - a.value);
                 const icons = { 'Alimentação': 'fa-utensils', 'Moradia': 'fa-house', 'Transporte': 'fa-car', 'Saúde': 'fa-heart-pulse', 'Educação': 'fa-graduation-cap', 'Lazer': 'fa-gamepad', 'Salário': 'fa-money-bill-wave', 'Investimentos': 'fa-chart-line', 'Outros': 'fa-box' };
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
