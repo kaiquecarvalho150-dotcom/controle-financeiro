@@ -931,50 +931,28 @@
     </div>
 
     <div class="modal-overlay" id="budget-modal">
-        <div class="modal">
-            <div class="modal-header">
-                <h3><i class="fas fa-wallet" style="color: var(--accent-primary); margin-right: 0.5rem;"></i>Definir Orçamentos</h3>
-                <button class="btn btn-icon btn-ghost" onclick="App.closeModal('budget-modal')"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="modal-body">
-                <p class="text-muted mb-4" style="font-size: 0.9rem;">Defina limites de gastos mensais por categoria.</p>
-                <form id="budget-form">
-                    <div class="form-group">
-                        <label class="form-label">🍽️ Alimentação</label>
-                        <input type="number" step="0.01" class="form-input budget-input" data-cat="Alimentação" placeholder="R$ 0,00">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">🏠 Moradia</label>
-                        <input type="number" step="0.01" class="form-input budget-input" data-cat="Moradia" placeholder="R$ 0,00">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">🚗 Transporte</label>
-                        <input type="number" step="0.01" class="form-input budget-input" data-cat="Transporte" placeholder="R$ 0,00">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">🎮 Lazer</label>
-                        <input type="number" step="0.01" class="form-input budget-input" data-cat="Lazer" placeholder="R$ 0,00">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">💊 Saúde</label>
-                        <input type="number" step="0.01" class="form-input budget-input" data-cat="Saúde" placeholder="R$ 0,00">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">📚 Educação</label>
-                        <input type="number" step="0.01" class="form-input budget-input" data-cat="Educação" placeholder="R$ 0,00">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">📦 Outros</label>
-                        <input type="number" step="0.01" class="form-input budget-input" data-cat="Outros" placeholder="R$ 0,00">
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-outline" onclick="App.closeModal('budget-modal')">Cancelar</button>
-                <button class="btn btn-primary" onclick="App.saveBudget()"><i class="fas fa-save"></i> Salvar</button>
-            </div>
+    <div class="modal">
+        <div class="modal-header">
+            <h3><i class="fas fa-wallet" style="color: var(--accent-primary); margin-right: 0.5rem;"></i>Definir Orçamentos</h3>
+            <button class="btn btn-icon btn-ghost" onclick="App.closeModal('budget-modal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <p class="text-muted mb-4" style="font-size: 0.9rem;">Defina limites de gastos mensais por categoria.</p>
+            
+            <!-- Lista dinâmica de categorias -->
+            <div id="budget-categories-list"></div>
+            
+            <!-- Botão para adicionar nova categoria -->
+            <button class="btn btn-outline w-full mt-4" onclick="App.addNewBudgetCategory()" style="border-style: dashed;">
+                <i class="fas fa-plus"></i> Adicionar nova categoria
+            </button>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="App.closeModal('budget-modal')">Cancelar</button>
+            <button class="btn btn-primary" onclick="App.saveBudget()"><i class="fas fa-save"></i> Salvar</button>
         </div>
     </div>
+</div>
 
     <div class="modal-overlay" id="report-modal">
         <div class="modal large">
@@ -1553,27 +1531,36 @@
             },
             loadBudgetForm: () => {
     const budgets = App.currentData.budgets || {};
-    document.querySelectorAll('.budget-input').forEach(input => {
-        const cat = input.getAttribute('data-cat');
-        input.value = budgets[cat] || '';
+    const listEl = document.getElementById('budget-categories-list');
+    listEl.innerHTML = '';
+    
+    const cats = Object.keys(budgets).filter(cat => budgets[cat] > 0);
+    
+    if (cats.length === 0) {
+        listEl.innerHTML = '<p class="text-muted text-center" style="padding: 2rem 0;">Nenhum orçamento criado ainda. Clique em "Adicionar nova categoria" para começar.</p>';
+        return;
+    }
+    
+    cats.forEach(cat => {
+        const item = document.createElement('div');
+        item.className = 'form-group';
+        item.style.display = 'flex';
+        item.style.gap = '0.5rem';
+        item.style.alignItems = 'flex-end';
+        item.innerHTML = `
+            <div style="flex: 1;">
+                <label class="form-label">${cat}</label>
+                <input type="number" step="0.01" class="form-input budget-input" data-cat="${cat}" value="${budgets[cat]}" placeholder="R$ 0,00">
+            </div>
+            <button class="btn btn-icon btn-ghost text-danger" onclick="App.removeBudgetField('${cat}')" title="Remover" style="margin-bottom: 1.25rem;">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        listEl.appendChild(item);
     });
 },
-            saveBudget: async () => {
-    const newBudgets = {};
-    document.querySelectorAll('.budget-input').forEach(input => {
-        const val = parseFloat(input.value);
-        if (val > 0) newBudgets[input.getAttribute('data-cat')] = val;
-    });
-    
-    App.currentData.budgets = newBudgets;
-    Storage.saveUserData(App.currentUser.email, App.currentData);
-    await FirebaseService.saveBudgets(App.currentUser.uid, newBudgets);
-    
-    App.closeModal('budget-modal');
-    App.renderDashboard();
-    Utils.showToast('Orçamentos atualizados!');
-},
-            deleteBudget: async (category) => {
+
+deleteBudget: async (category) => {
     if (confirm(`Deseja excluir completamente o orçamento de "${category}"?\n\nEle não aparecerá mais na lista até que você crie um novo.`)) {
         delete App.currentData.budgets[category];
         Storage.saveUserData(App.currentUser.email, App.currentData);
@@ -1589,19 +1576,82 @@
     }
 },
 
+addNewBudgetCategory: () => {
+    const name = prompt('Digite o nome da nova categoria (ex: Netflix, Academia, Combustível):');
+    if (!name || !name.trim()) return;
+    
+    const cleanName = name.trim();
+    const listEl = document.getElementById('budget-categories-list');
+    
+    // Verifica se já existe
+    if (listEl.querySelector(`[data-cat="${cleanName}"]`)) {
+        Utils.showToast('Esta categoria já existe!', 'error');
+        return;
+    }
+    
+    const item = document.createElement('div');
+    item.className = 'form-group';
+    item.style.display = 'flex';
+    item.style.gap = '0.5rem';
+    item.style.alignItems = 'flex-end';
+    item.innerHTML = `
+        <div style="flex: 1;">
+            <label class="form-label">${cleanName}</label>
+            <input type="number" step="0.01" class="form-input budget-input" data-cat="${cleanName}" placeholder="R$ 0,00">
+        </div>
+        <button class="btn btn-icon btn-ghost text-danger" onclick="App.removeBudgetField('${cleanName}')" title="Remover" style="margin-bottom: 1.25rem;">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    listEl.appendChild(item);
+    
+    // Foca no campo criado
+    item.querySelector('input').focus();
+},
+
+removeBudgetField: (category) => {
+    const input = document.querySelector(`.budget-input[data-cat="${category}"]`);
+    if (input) {
+        input.closest('.form-group').remove();
+    }
+},
+
+            saveBudget: async () => {
+    const newBudgets = {};
+    document.querySelectorAll('.budget-input').forEach(input => {
+        const cat = input.getAttribute('data-cat');
+        const val = parseFloat(input.value);
+        if (cat && val > 0) {
+            newBudgets[cat] = val;
+        }
+    });
+    
+    App.currentData.budgets = newBudgets;
+    Storage.saveUserData(App.currentUser.email, App.currentData);
+    
+    try {
+        await FirebaseService.saveBudgets(App.currentUser.uid, newBudgets);
+    } catch (e) {
+        console.error('Erro ao salvar orçamentos:', e);
+    }
+    
+    App.closeModal('budget-modal');
+    App.renderDashboard();
+    Utils.showToast('Orçamentos salvos com sucesso!');
+},
+
 editBudget: async (oldCategory) => {
     // 1. Pergunta o novo nome
     const newCategory = prompt("Digite o nome da categoria (ex: Mercado, Uber, Aluguel):", oldCategory);
-    if (newCategory === null) return; // Cancelou
+    if (newCategory === null) return;
     const cleanName = newCategory.trim();
     if (!cleanName) { Utils.showToast('Nome não pode ser vazio!', 'error'); return; }
 
     // 2. Pergunta o novo valor
     const currentVal = App.currentData.budgets[oldCategory] || 0;
     const newValStr = prompt(`Defina o limite mensal para "${cleanName}":`, currentVal);
-    if (newValStr === null) return; // Cancelou
+    if (newValStr === null) return;
     
-    // Aceita vírgula ou ponto
     const newVal = parseFloat(newValStr.replace(',', '.'));
     if (isNaN(newVal) || newVal < 0) {
         Utils.showToast('Valor inválido! Use apenas números.', 'error');
@@ -1610,7 +1660,7 @@ editBudget: async (oldCategory) => {
 
     // 3. Atualiza os dados
     if (cleanName !== oldCategory) {
-        delete App.currentData.budgets[oldCategory]; // Remove o antigo se mudou o nome
+        delete App.currentData.budgets[oldCategory];
     }
     App.currentData.budgets[cleanName] = newVal;
 
