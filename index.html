@@ -887,16 +887,8 @@
                     <div class="form-group">
                         <label class="form-label">Categoria</label>
                         <select class="form-select" id="record-category" required>
-                            <option value="Alimentação">🍽️ Alimentação</option>
-                            <option value="Moradia">🏠 Moradia</option>
-                            <option value="Transporte">🚗 Transporte</option>
-                            <option value="Saúde">💊 Saúde</option>
-                            <option value="Educação">📚 Educação</option>
-                            <option value="Lazer">🎮 Lazer</option>
-                            <option value="Salário">💰 Salário</option>
-                            <option value="Investimentos">📈 Investimentos</option>
-                            <option value="Outros">📦 Outros</option>
-                        </select>
+    <option value="">Selecione uma categoria...</option>
+</select>
                     </div>
                     <div class="toggle-wrapper">
                         <label><i class="fas fa-check-circle" style="margin-right: 0.5rem; color: var(--success);"></i>Marcar como Pago/Recebido</label>
@@ -1350,6 +1342,7 @@
             openModal: (id) => { 
                 document.getElementById(id).classList.add('active'); 
                 if (id === 'record-modal') App.resetRecordForm(); 
+				App.populateCategorySelect();
                 else if (id === 'budget-modal') App.loadBudgetForm(); 
                 else if (id === 'settings-modal') { 
                     document.getElementById('setting-name').value = App.currentUser.name; 
@@ -1373,6 +1366,38 @@
                 App.toggleType(document.querySelector('input[name="type"][value="expense"]')); 
                 App.toggleRepeatOptions(); 
             },
+			populateCategorySelect: () => {
+    const select = document.getElementById('record-category');
+    const budgets = App.currentData.budgets || {};
+    const budgetCategories = Object.keys(budgets);
+    
+    // Categorias padrão com ícones
+    const defaultCategories = {
+        'Alimentação': '🍽️',
+        'Moradia': '🏠',
+        'Transporte': '🚗',
+        'Saúde': '💊',
+        'Educação': '📚',
+        'Lazer': '🎮',
+        'Salário': '💰',
+        'Investimentos': '📈',
+        'Outros': '📦'
+    };
+    
+    // Limpa o select
+    select.innerHTML = '<option value="">Selecione uma categoria...</option>';
+    
+    // Combina categorias padrão com categorias dos orçamentos
+    const allCategories = [...new Set([...Object.keys(defaultCategories), ...budgetCategories])];
+    
+    allCategories.forEach(cat => {
+        const icon = defaultCategories[cat] || '📦';
+        const option = document.createElement('option');
+        option.value = cat;
+        option.textContent = `${icon} ${cat}`;
+        select.appendChild(option);
+    });
+},
 saveRecord: async () => {
     const id = document.getElementById('record-id').value;
     const type = document.querySelector('input[name="type"]:checked').value;
