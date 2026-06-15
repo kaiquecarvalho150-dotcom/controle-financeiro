@@ -1373,67 +1373,72 @@
                 App.toggleType(document.querySelector('input[name="type"][value="expense"]')); 
                 App.toggleRepeatOptions(); 
             },
-            saveRecord: async () => {
-                const id = document.getElementById('record-id').value;
-                const type = document.querySelector('input[name="type"]:checked').value;
-                const desc = document.getElementById('record-desc').value;
-                const value = parseFloat(document.getElementById('record-value').value);
-                const date = document.getElementById('record-date').value;
-                const category = document.getElementById('record-category').value;
-                const status = document.getElementById('record-status').checked;
-                const repeat = document.getElementById('record-repeat').value;
-                const parcels = parseInt(document.getElementById('record-parcels').value) || 2;
-                const notes = document.getElementById('record-notes').value;
-                const isInstallment = document.getElementById('record-form').dataset.isInstallment === 'true';
+saveRecord: async () => {
+    const id = document.getElementById('record-id').value;
+    const type = document.querySelector('input[name="type"]:checked').value;
+    const desc = document.getElementById('record-desc').value;
+    const value = parseFloat(document.getElementById('record-value').value);
+    const date = document.getElementById('record-date').value;
+    const category = document.getElementById('record-category').value;
+    const status = document.getElementById('record-status').checked;
+    const repeat = document.getElementById('record-repeat').value;
+    const parcels = parseInt(document.getElementById('record-parcels').value) || 2;
+    const notes = document.getElementById('record-notes').value;
+    const isInstallment = document.getElementById('record-form').dataset.isInstallment === 'true';
 
-                if (!desc || !value || !date) { 
-                    Utils.showToast('Preencha os campos obrigatórios!', 'error'); 
-                    return; 
-                }
+    if (!desc || !value || !date) { 
+        Utils.showToast('Preencha os campos obrigatórios!', 'error'); 
+        return; 
+    }
 
-                if (id && (isInstallment || repeat === 'fixed')) {
-                    const editAll = confirm('Deseja editar APENAS este registro?\n\nClique em OK para editar apenas este.\nClique em Cancelar para editar este e os próximos registros (fixos ou parcelados).');
-                    
-                    if (editAll) {
-                        await App.updateSingleRecord(id, { type, description: desc, value, date, category, status, repeat: 'none', notes });
-                    } else {
-                        await App.updateRecurringRecords(id, { type, description: desc, value, date, category, status, notes, repeat });
-                    }
-                } else if (id) {
-                    await App.updateSingleRecord(id, { type, description: desc, value, date, category, status, repeat: 'none', notes });
-                } else {
-                    if (repeat === 'none' || repeat === 'fixed') {
-                        const newRecord = { id: Utils.generateId(), type, description: desc, value, date, category, status, repeat, notes };
-                        App.currentData.records.push(newRecord);
-                        await FirebaseService.saveRecord(App.currentUser.uid, newRecord);
-                    } else if (repeat === 'installment') {
-                        const baseDate = new Date(date);
-                        for (let i = 0; i < parcels; i++) {
-                            const newDate = new Date(baseDate);
-                            newDate.setMonth(newDate.getMonth() + i);
-                            const dateStr = newDate.toISOString().split('T')[0];
-                            const newRecord = { 
-                                id: Utils.generateId(), 
-                                type, 
-                                description: `${desc} (${i + 1}/${parcels})`, 
-                                value, 
-                                date: dateStr, 
-                                category, 
-                                status: i === 0 ? status : false, 
-                                repeat: 'installment', 
-                                notes 
-                            };
-                            App.currentData.records.push(newRecord);
-                            await FirebaseService.saveRecord(App.currentUser.uid, newRecord);
-                        }
-                    }
-                }
+    // Se for edição de registro parcelado ou fixo, perguntar
+    if (id && (isInstallment || repeat === 'fixed')) {
+        const editAll = confirm('Deseja editar APENAS este registro?\n\nClique em OK para editar apenas este.\nClique em Cancelar para editar este e os próximos registros (fixos ou parcelados).');
+        
+        if (editAll) {
+            // Editar apenas este
+            await App.updateSingleRecord(id, { type, description: desc, value, date, category, status, repeat: 'none', notes });
+        } else {
+            // Editar este e os próximos (fixos ou parcelados)
+            await App.updateRecurringRecords(id, { type, description: desc, value, date, category, status, notes, repeat });
+        }
+    } else if (id) {
+        // Edição simples (não recorrente)
+        await App.updateSingleRecord(id, { type, description: desc, value, date, category, status, repeat: 'none', notes });
+    } else {
+        // Novo registro
+        if (repeat === 'none' || repeat === 'fixed') {
+            const newRecord = { id: Utils.generateId(), type, description: desc, value, date, category, status, repeat, notes };
+            App.currentData.records.push(newRecord);
+            await FirebaseService.saveRecord(App.currentUser.uid, newRecord);
+        } else if (repeat === 'installment') {
+            const baseDate = new Date(date);
+            for (let i = 0; i < parcels; i++) {
+                const newDate = new Date(baseDate);
+                newDate.setMonth(newDate.getMonth() + i);
+                const dateStr = newDate.toISOString().split('T')[0];
+                const newRecord = { 
+                    id: Utils.generateId(), 
+                    type, 
+                    description: `${desc} (${i + 1}/${parcels})`, 
+                    value, 
+                    date: dateStr, 
+                    category, 
+                    status: i === 0 ? status : false, 
+                    repeat: 'installment', 
+                    notes 
+                };
+                App.currentData.records.push(newRecord);
+                await FirebaseService.saveRecord(App.currentUser.uid, newRecord);
+            }
+        }
+    }
 
-                Storage.saveUserData(App.currentUser.email, App.currentData);
-                App.closeModal('record-modal');
-                App.renderDashboard();
-                Utils.showToast('Registro salvo com sucesso!');
-            },
+    Storage.saveUserData(App.currentUser.email, App.currentData);
+    App.closeModal('record-modal');
+    App.renderDashboard();
+    Utils.showToast('Registro salvo com sucesso!');
+},
             updateSingleRecord: async (id, updates) => {
                 const idx = App.currentData.records.findIndex(r => r.id === id);
                 if (idx !== -1) {
@@ -1491,33 +1496,102 @@
                 }
             },
             editRecord: (id) => {
-                const r = App.currentData.records.find(rec => rec.id === id);
-                if (!r) return;
+    const r = App.currentData.records.find(rec => rec.id === id);
+    if (!r) return;
 
-                document.getElementById('record-id').value = r.id;
-                document.querySelector(`input[name="type"][value="${r.type}"]`).checked = true;
-                App.toggleType(document.querySelector(`input[name="type"][value="${r.type}"]`));
-                document.getElementById('record-desc').value = r.description.replace(/\s\(\d+\/\d+\)$/, '');
-                document.getElementById('record-value').value = r.value;
-                document.getElementById('record-date').value = r.date;
-                document.getElementById('record-category').value = r.category;
-                document.getElementById('record-status').checked = r.status;
-                document.getElementById('record-repeat').value = r.repeat;
-                App.toggleRepeatOptions();
-                document.getElementById('record-notes').value = r.notes || '';
-                document.getElementById('record-form').dataset.isInstallment = r.repeat === 'installment' ? 'true' : 'false';
+    // Preenche todos os campos do modal
+    document.getElementById('record-id').value = r.id;
+    document.getElementById('record-desc').value = r.description.replace(/\s\(\d+\/\d+\)$/, '');
+    document.getElementById('record-value').value = r.value;
+    document.getElementById('record-date').value = r.date;
+    document.getElementById('record-category').value = r.category;
+    document.getElementById('record-status').checked = r.status;
+    document.getElementById('record-notes').value = r.notes || '';
+    
+    // Seleciona o tipo correto (Receita/Despesa)
+    document.querySelector(`input[name="type"][value="${r.type}"]`).checked = true;
+    App.toggleType(document.querySelector(`input[name="type"][value="${r.type}"]`));
+    
+    // Seleciona a repetição correta
+    document.getElementById('record-repeat').value = r.repeat;
+    App.toggleRepeatOptions();
+    
+    // Armazena se é parcelado para usar na confirmação
+    document.getElementById('record-form').dataset.isInstallment = r.repeat === 'installment' ? 'true' : 'false';
 
-                App.openModal('record-modal');
-            },
+    // Abre o modal
+    App.openModal('record-modal');
+},
             deleteRecord: async (id) => {
-                if (confirm('Tem certeza que deseja excluir este registro?')) {
-                    App.currentData.records = App.currentData.records.filter(r => r.id !== id);
-                    Storage.saveUserData(App.currentUser.email, App.currentData);
-                    await FirebaseService.deleteRecord(App.currentUser.uid, id);
-                    App.renderDashboard();
-                    Utils.showToast('Registro excluído.');
-                }
-            },
+    const record = App.currentData.records.find(r => r.id === id);
+    if (!record) return;
+
+    // Se for registro parcelado ou fixo, perguntar
+    if (record.repeat === 'installment' || record.repeat === 'fixed') {
+        const deleteAll = confirm('Deseja excluir APENAS este registro?\n\nClique em OK para excluir apenas este.\nClique em Cancelar para excluir este e os próximos registros (fixos ou parcelados).');
+        
+        if (deleteAll) {
+            // Excluir apenas este
+            App.currentData.records = App.currentData.records.filter(r => r.id !== id);
+            await FirebaseService.deleteRecord(App.currentUser.uid, id);
+        } else {
+            // Excluir este e os próximos
+            await App.deleteRecurringRecords(id);
+        }
+    } else {
+        // Exclusão simples (não recorrente)
+        if (confirm('Tem certeza que deseja excluir este registro?')) {
+            App.currentData.records = App.currentData.records.filter(r => r.id !== id);
+            await FirebaseService.deleteRecord(App.currentUser.uid, id);
+        }
+    }
+
+    Storage.saveUserData(App.currentUser.email, App.currentData);
+    App.renderDashboard();
+    Utils.showToast('Registro excluído.');
+},
+deleteRecurringRecords: async (id) => {
+    const recordIndex = App.currentData.records.findIndex(r => r.id === id);
+    if (recordIndex === -1) return;
+
+    const originalRecord = App.currentData.records[recordIndex];
+    const match = originalRecord.description.match(/\((\d+)\/(\d+)\)/);
+    
+    if (match) {
+        // É parcelado - excluir deste em diante
+        const currentParcel = parseInt(match[1]);
+        const totalParcels = parseInt(match[2]);
+        const baseDesc = originalRecord.description.replace(/\s\(\d+\/\d+\)$/, '');
+
+        for (let i = currentParcel; i <= totalParcels; i++) {
+            const recordToDelete = App.currentData.records.find(r => {
+                const rMatch = r.description.match(/\((\d+)\/(\d+)\)/);
+                return rMatch && parseInt(rMatch[1]) === i && r.description.includes(baseDesc);
+            });
+
+            if (recordToDelete) {
+                App.currentData.records = App.currentData.records.filter(r => r.id !== recordToDelete.id);
+                await FirebaseService.deleteRecord(App.currentUser.uid, recordToDelete.id);
+            }
+        }
+    } else if (originalRecord.repeat === 'fixed') {
+        // É fixo - excluir todos os registros fixos com mesma descrição a partir desta data
+        const baseDesc = originalRecord.description;
+        const startDate = new Date(originalRecord.date);
+        
+        const recordsToDelete = App.currentData.records.filter(r => {
+            const recordDate = new Date(r.date);
+            return r.description === baseDesc && 
+                   r.repeat === 'fixed' && 
+                   recordDate >= startDate;
+        });
+
+        for (const recordToDelete of recordsToDelete) {
+            App.currentData.records = App.currentData.records.filter(r => r.id !== recordToDelete.id);
+            await FirebaseService.deleteRecord(App.currentUser.uid, recordToDelete.id);
+        }
+    }
+},
             toggleStatus: async (id) => {
                 const record = App.currentData.records.find(r => r.id === id);
                 if (record) {
