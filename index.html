@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Controle Financeiro</title>
     
-    <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#3b82f6">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -15,15 +14,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
     <style>
-        /* ============================================
-           SISTEMA DE TEMAS (CLARO / ESCURO)
-           ============================================ */
         :root {
             --bg-primary: #f8fafc;
             --bg-secondary: #ffffff;
@@ -856,193 +851,190 @@
     </div>
 
     <!-- MODAL: NOVO REGISTRO -->
-<div class="modal-overlay" id="record-modal">
-    <div class="modal">
-        <div class="modal-header">
-            <h3><i class="fas fa-plus-circle" style="color: var(--accent-primary); margin-right: 0.5rem;"></i>Novo Registro</h3>
-            <button class="btn btn-icon btn-ghost" onclick="App.closeModal('record-modal')"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="modal-body">
-            <form id="record-form">
-                <input type="hidden" id="record-id">
-                <div class="type-selector">
-                    <label class="type-option active expense" id="type-expense-label">
-                        <input type="radio" name="type" value="expense" checked onchange="App.toggleType(this)">
-                        <i class="fas fa-arrow-down"></i> Despesa
-                    </label>
-                    <label class="type-option income" id="type-income-label">
-                        <input type="radio" name="type" value="income" onchange="App.toggleType(this)">
-                        <i class="fas fa-arrow-up"></i> Receita
-                    </label>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Descrição</label>
-                    <input type="text" class="form-input" id="record-desc" required placeholder="Ex: Aluguel, Salário">
-                </div>
-                <div class="flex gap-3">
-                    <div class="form-group w-full">
-                        <label class="form-label">Valor (R$)</label>
-                        <input type="number" step="0.01" class="form-input" id="record-value" required placeholder="0,00">
-                    </div>
-                    <div class="form-group w-full">
-                        <label class="form-label">Data</label>
-                        <input type="date" class="form-input" id="record-date" required>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Categoria</label>
-                    <select class="form-select" id="record-category" required>
-                        <option value="Alimentação">🍽️ Alimentação</option>
-                        <option value="Moradia">🏠 Moradia</option>
-                        <option value="Transporte">🚗 Transporte</option>
-                        <option value="Saúde">💊 Saúde</option>
-                        <option value="Educação">📚 Educação</option>
-                        <option value="Lazer">🎮 Lazer</option>
-                        <option value="Salário">💰 Salário</option>
-                        <option value="Investimentos">📈 Investimentos</option>
-                        <option value="Outros">📦 Outros</option>
-                    </select>
-                </div>
-                <div class="toggle-wrapper">
-                    <label><i class="fas fa-check-circle" style="margin-right: 0.5rem; color: var(--success);"></i>Marcar como Pago/Recebido</label>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="record-status">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Repetição</label>
-                    <select class="form-select" id="record-repeat" onchange="App.toggleRepeatOptions()">
-                        <option value="none">Não repetir</option>
-                        <option value="fixed">🔄 Fixo (Mensal)</option>
-                        <option value="installment">📊 Parcelado</option>
-                    </select>
-                </div>
-                <div class="form-group hidden" id="installment-group">
-                    <label class="form-label">Número de Parcelas</label>
-                    <input type="number" class="form-input" id="record-parcels" min="2" value="2">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Anotações (Opcional)</label>
-                    <textarea class="form-input form-textarea" id="record-notes" rows="2" placeholder="Observações adicionais..."></textarea>
-                </div>
-            </form>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-outline" onclick="App.closeModal('record-modal')">Cancelar</button>
-            <button class="btn btn-primary" onclick="App.saveRecord()"><i class="fas fa-save"></i> Salvar</button>
-        </div>
-    </div>
-</div>
-
-<!-- MODAL: ORÇAMENTO -->
-<div class="modal-overlay" id="budget-modal">
-    <div class="modal">
-        <div class="modal-header">
-            <h3><i class="fas fa-wallet" style="color: var(--accent-primary); margin-right: 0.5rem;"></i>Definir Orçamentos</h3>
-            <button class="btn btn-icon btn-ghost" onclick="App.closeModal('budget-modal')"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="modal-body">
-            <p class="text-muted mb-4" style="font-size: 0.9rem;">Defina limites de gastos mensais por categoria.</p>
-            <form id="budget-form">
-                <div class="form-group">
-                    <label class="form-label">🍽️ Alimentação</label>
-                    <input type="number" step="0.01" class="form-input budget-input" data-cat="Alimentação" placeholder="R$ 0,00">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">🏠 Moradia</label>
-                    <input type="number" step="0.01" class="form-input budget-input" data-cat="Moradia" placeholder="R$ 0,00">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">🚗 Transporte</label>
-                    <input type="number" step="0.01" class="form-input budget-input" data-cat="Transporte" placeholder="R$ 0,00">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">🎮 Lazer</label>
-                    <input type="number" step="0.01" class="form-input budget-input" data-cat="Lazer" placeholder="R$ 0,00">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">💊 Saúde</label>
-                    <input type="number" step="0.01" class="form-input budget-input" data-cat="Saúde" placeholder="R$ 0,00">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">📚 Educação</label>
-                    <input type="number" step="0.01" class="form-input budget-input" data-cat="Educação" placeholder="R$ 0,00">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">📦 Outros</label>
-                    <input type="number" step="0.01" class="form-input budget-input" data-cat="Outros" placeholder="R$ 0,00">
-                </div>
-            </form>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-outline" onclick="App.closeModal('budget-modal')">Cancelar</button>
-            <button class="btn btn-primary" onclick="App.saveBudget()"><i class="fas fa-save"></i> Salvar</button>
-        </div>
-    </div>
-</div>
-
-<!-- MODAL: RELATÓRIOS -->
-<div class="modal-overlay" id="report-modal">
-    <div class="modal large">
-        <div class="modal-header">
-            <h3><i class="fas fa-chart-column" style="color: var(--accent-primary); margin-right: 0.5rem;"></i>Relatórios Financeiros</h3>
-            <button class="btn btn-icon btn-ghost" onclick="App.closeModal('report-modal')"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="modal-body">
-            <div class="filter-group">
-                <button class="filter-btn" data-period="7days" onclick="App.renderReport('7days')">7 Dias</button>
-                <button class="filter-btn active" data-period="6months" onclick="App.renderReport('6months')">6 Meses</button>
-                <button class="filter-btn" data-period="5years" onclick="App.renderReport('5years')">5 Anos</button>
+    <div class="modal-overlay" id="record-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-plus-circle" style="color: var(--accent-primary); margin-right: 0.5rem;"></i>Novo Registro</h3>
+                <button class="btn btn-icon btn-ghost" onclick="App.closeModal('record-modal')"><i class="fas fa-times"></i></button>
             </div>
-            <div style="height: 320px; position: relative;">
-                <canvas id="reportChart"></canvas>
+            <div class="modal-body">
+                <form id="record-form">
+                    <input type="hidden" id="record-id">
+                    <div class="type-selector">
+                        <label class="type-option active expense" id="type-expense-label">
+                            <input type="radio" name="type" value="expense" checked onchange="App.toggleType(this)">
+                            <i class="fas fa-arrow-down"></i> Despesa
+                        </label>
+                        <label class="type-option income" id="type-income-label">
+                            <input type="radio" name="type" value="income" onchange="App.toggleType(this)">
+                            <i class="fas fa-arrow-up"></i> Receita
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Descrição</label>
+                        <input type="text" class="form-input" id="record-desc" required placeholder="Ex: Aluguel, Salário">
+                    </div>
+                    <div class="flex gap-3">
+                        <div class="form-group w-full">
+                            <label class="form-label">Valor (R$)</label>
+                            <input type="number" step="0.01" class="form-input" id="record-value" required placeholder="0,00">
+                        </div>
+                        <div class="form-group w-full">
+                            <label class="form-label">Data</label>
+                            <input type="date" class="form-input" id="record-date" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Categoria</label>
+                        <select class="form-select" id="record-category" required>
+                            <option value="Alimentação">🍽️ Alimentação</option>
+                            <option value="Moradia">🏠 Moradia</option>
+                            <option value="Transporte">🚗 Transporte</option>
+                            <option value="Saúde">💊 Saúde</option>
+                            <option value="Educação">📚 Educação</option>
+                            <option value="Lazer">🎮 Lazer</option>
+                            <option value="Salário">💰 Salário</option>
+                            <option value="Investimentos">📈 Investimentos</option>
+                            <option value="Outros">📦 Outros</option>
+                        </select>
+                    </div>
+                    <div class="toggle-wrapper">
+                        <label><i class="fas fa-check-circle" style="margin-right: 0.5rem; color: var(--success);"></i>Marcar como Pago/Recebido</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="record-status">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Repetição</label>
+                        <select class="form-select" id="record-repeat" onchange="App.toggleRepeatOptions()">
+                            <option value="none">Não repetir</option>
+                            <option value="fixed">🔄 Fixo (Mensal)</option>
+                            <option value="installment">📊 Parcelado</option>
+                        </select>
+                    </div>
+                    <div class="form-group hidden" id="installment-group">
+                        <label class="form-label">Número de Parcelas</label>
+                        <input type="number" class="form-input" id="record-parcels" min="2" value="2">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Anotações (Opcional)</label>
+                        <textarea class="form-input form-textarea" id="record-notes" rows="2" placeholder="Observações adicionais..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="App.closeModal('record-modal')">Cancelar</button>
+                <button class="btn btn-primary" onclick="App.saveRecord()"><i class="fas fa-save"></i> Salvar</button>
             </div>
         </div>
     </div>
-</div>
 
-<!-- MODAL: CONFIGURAÇÕES -->
-<div class="modal-overlay" id="settings-modal">
-    <div class="modal">
-        <div class="modal-header">
-            <h3><i class="fas fa-gear" style="color: var(--accent-primary); margin-right: 0.5rem;"></i>Configurações</h3>
-            <button class="btn btn-icon btn-ghost" onclick="App.closeModal('settings-modal')"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="modal-body">
-            <form id="settings-form">
-                <div class="form-group">
-                    <label class="form-label">Nome</label>
-                    <input type="text" class="form-input" id="setting-name">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Nova Senha <span class="text-muted" style="font-weight: 400;">(deixe em branco para manter)</span></label>
-                    <div class="password-wrapper">
-                        <input type="password" class="form-input" id="setting-password" placeholder="••••••••">
-                        <button type="button" class="password-toggle" onclick="togglePassword('setting-password', this)">
-                            <i class="fas fa-eye"></i>
-                        </button>
+    <!-- MODAL: ORÇAMENTO -->
+    <div class="modal-overlay" id="budget-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-wallet" style="color: var(--accent-primary); margin-right: 0.5rem;"></i>Definir Orçamentos</h3>
+                <button class="btn btn-icon btn-ghost" onclick="App.closeModal('budget-modal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted mb-4" style="font-size: 0.9rem;">Defina limites de gastos mensais por categoria.</p>
+                <form id="budget-form">
+                    <div class="form-group">
+                        <label class="form-label">🍽️ Alimentação</label>
+                        <input type="number" step="0.01" class="form-input budget-input" data-cat="Alimentação" placeholder="R$ 0,00">
                     </div>
-                </div>
-                <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 1.5rem 0;">
-                <button type="button" class="btn btn-danger w-full" onclick="App.deleteAccount()">
-                    <i class="fas fa-trash-alt"></i> Excluir Conta Permanentemente
-                </button>
-            </form>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-outline" onclick="App.closeModal('settings-modal')">Cancelar</button>
-            <button class="btn btn-primary" onclick="App.saveSettings()"><i class="fas fa-save"></i> Salvar</button>
+                    <div class="form-group">
+                        <label class="form-label">🏠 Moradia</label>
+                        <input type="number" step="0.01" class="form-input budget-input" data-cat="Moradia" placeholder="R$ 0,00">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">🚗 Transporte</label>
+                        <input type="number" step="0.01" class="form-input budget-input" data-cat="Transporte" placeholder="R$ 0,00">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">🎮 Lazer</label>
+                        <input type="number" step="0.01" class="form-input budget-input" data-cat="Lazer" placeholder="R$ 0,00">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">💊 Saúde</label>
+                        <input type="number" step="0.01" class="form-input budget-input" data-cat="Saúde" placeholder="R$ 0,00">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">📚 Educação</label>
+                        <input type="number" step="0.01" class="form-input budget-input" data-cat="Educação" placeholder="R$ 0,00">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">📦 Outros</label>
+                        <input type="number" step="0.01" class="form-input budget-input" data-cat="Outros" placeholder="R$ 0,00">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="App.closeModal('budget-modal')">Cancelar</button>
+                <button class="btn btn-primary" onclick="App.saveBudget()"><i class="fas fa-save"></i> Salvar</button>
+            </div>
         </div>
     </div>
-</div>
+
+    <!-- MODAL: RELATÓRIOS -->
+    <div class="modal-overlay" id="report-modal">
+        <div class="modal large">
+            <div class="modal-header">
+                <h3><i class="fas fa-chart-column" style="color: var(--accent-primary); margin-right: 0.5rem;"></i>Relatórios Financeiros</h3>
+                <button class="btn btn-icon btn-ghost" onclick="App.closeModal('report-modal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="filter-group">
+                    <button class="filter-btn" data-period="7days" onclick="App.renderReport('7days')">7 Dias</button>
+                    <button class="filter-btn active" data-period="6months" onclick="App.renderReport('6months')">6 Meses</button>
+                    <button class="filter-btn" data-period="5years" onclick="App.renderReport('5years')">5 Anos</button>
+                </div>
+                <div style="height: 320px; position: relative;">
+                    <canvas id="reportChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: CONFIGURAÇÕES -->
+    <div class="modal-overlay" id="settings-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-gear" style="color: var(--accent-primary); margin-right: 0.5rem;"></i>Configurações</h3>
+                <button class="btn btn-icon btn-ghost" onclick="App.closeModal('settings-modal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="settings-form">
+                    <div class="form-group">
+                        <label class="form-label">Nome</label>
+                        <input type="text" class="form-input" id="setting-name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nova Senha <span class="text-muted" style="font-weight: 400;">(deixe em branco para manter)</span></label>
+                        <div class="password-wrapper">
+                            <input type="password" class="form-input" id="setting-password" placeholder="••••••••">
+                            <button type="button" class="password-toggle" onclick="togglePassword('setting-password', this)">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 1.5rem 0;">
+                    <button type="button" class="btn btn-danger w-full" onclick="App.deleteAccount()">
+                        <i class="fas fa-trash-alt"></i> Excluir Conta Permanentemente
+                    </button>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="App.closeModal('settings-modal')">Cancelar</button>
+                <button class="btn btn-primary" onclick="App.saveSettings()"><i class="fas fa-save"></i> Salvar</button>
+            </div>
+        </div>
+    </div>
 
     <div id="toast" class="toast"></div>
 
     <script>
-        /* ============================================
-           FIREBASE CONFIGURATION
-           ============================================ */
         const firebaseConfig = {
             apiKey: "AIzaSyD1o73kUZI3WY35pQ7Z9_tnw3g4JXwst9A",
             authDomain: "controle-financeiro-4a76f.firebaseapp.com",
@@ -1056,68 +1048,54 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        /* ============================================
-           FIREBASE SERVICE
-           ============================================ */
         const FirebaseService = {
-    // Salvar registro no Firestore
-    saveRecord: async (userId, record) => {
-        try {
-            await db.collection('users').doc(userId).collection('records').doc(record.id).set({
-                ...record,
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            console.log('✅ Registro salvo na nuvem');
-        } catch (error) {
-            console.error('❌ Erro ao salvar registro:', error);
-        }
-    },
-
-    // Deletar registro do Firestore
-    deleteRecord: async (userId, recordId) => {
-        try {
-            await db.collection('users').doc(userId).collection('records').doc(recordId).delete();
-            console.log('🗑️ Registro deletado da nuvem');
-        } catch (error) {
-            console.error('❌ Erro ao deletar:', error);
-        }
-    },
-
-    // Salvar orçamentos no Firestore (coleção separada)
-    saveBudgets: async (userId, budgets) => {
-        try {
-            await db.collection('budgets').doc(userId).set({
-                data: budgets,
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            console.log('✅ Orçamentos salvos na nuvem');
-        } catch (error) {
-            console.error('❌ Erro ao salvar orçamentos:', error);
-        }
-    },
-
-    // Carregar todos os dados do Firestore
-    loadAllData: async (userId) => {
-        try {
-            // Carregar registros da subcoleção
-            const recordsSnapshot = await db.collection('users').doc(userId).collection('records').get();
-            const records = [];
-            recordsSnapshot.forEach(doc => {
-                records.push(doc.data());
-            });
-
-            // Carregar orçamentos da coleção separada
-            const budgetsDoc = await db.collection('budgets').doc(userId).get();
-            const budgets = budgetsDoc.exists ? budgetsDoc.data().data : {};
-
-            console.log('✅ Dados carregados:', { records: records.length, budgets });
-            return { records, budgets };
-        } catch (error) {
-            console.error('❌ Erro ao carregar dados:', error);
-            return { records: [], budgets: {} };
-        }
-    }
-};
+            saveRecord: async (userId, record) => {
+                try {
+                    await db.collection('users').doc(userId).collection('records').doc(record.id).set({
+                        ...record,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    console.log('✅ Registro salvo na nuvem');
+                } catch (error) {
+                    console.error('❌ Erro ao salvar registro:', error);
+                }
+            },
+            deleteRecord: async (userId, recordId) => {
+                try {
+                    await db.collection('users').doc(userId).collection('records').doc(recordId).delete();
+                    console.log('🗑️ Registro deletado da nuvem');
+                } catch (error) {
+                    console.error('❌ Erro ao deletar:', error);
+                }
+            },
+            saveBudgets: async (userId, budgets) => {
+                try {
+                    await db.collection('budgets').doc(userId).set({
+                        data: budgets,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    console.log('✅ Orçamentos salvos na nuvem');
+                } catch (error) {
+                    console.error('❌ Erro ao salvar orçamentos:', error);
+                }
+            },
+            loadAllData: async (userId) => {
+                try {
+                    const recordsSnapshot = await db.collection('users').doc(userId).collection('records').get();
+                    const records = [];
+                    recordsSnapshot.forEach(doc => {
+                        records.push(doc.data());
+                    });
+                    const budgetsDoc = await db.collection('budgets').doc(userId).get();
+                    const budgets = budgetsDoc.exists ? budgetsDoc.data().data : {};
+                    console.log('✅ Dados carregados:', { records: records.length, budgets });
+                    return { records, budgets };
+                } catch (error) {
+                    console.error('❌ Erro ao carregar dados:', error);
+                    return { records: [], budgets: {} };
+                }
+            }
+        };
 
         const Theme = {
             current: localStorage.getItem('cf_theme') || 'light',
@@ -1321,42 +1299,42 @@
                 App.renderTransactions(monthRecords);
             },
             renderBudgets: (categoryExpenses) => {
-    const budgets = App.currentData.budgets || {};
-    const listEl = document.getElementById('budget-list');
-    listEl.innerHTML = '';
-    const catsWithBudget = Object.keys(budgets).filter(cat => budgets[cat] > 0);
-    if (catsWithBudget.length === 0) {
-        listEl.innerHTML = `<div class="empty-state"><i class="fas fa-wallet"></i><p>Nenhum orçamento definido. Clique no + para definir.</p></div>`;
-        return;
-    }
-    const icons = { 'Alimentação': '🍽️', 'Moradia': '🏠', 'Transporte': '🚗', 'Lazer': '🎮', 'Saúde': '💊', 'Educação': '📚', 'Outros': '📦' };
-    catsWithBudget.forEach(cat => {
-        const limit = budgets[cat];
-        const spent = categoryExpenses[cat] || 0;
-        const percentage = Math.min((spent / limit) * 100, 100);
-        const color = percentage >= 90 ? 'var(--danger)' : (percentage >= 70 ? 'var(--warning)' : 'var(--success)');
-        const item = document.createElement('div');
-        item.className = 'budget-item';
-        item.innerHTML = `
-            <div class="budget-header">
-                <span class="budget-cat">${icons[cat] || '📦'} ${cat}</span>
-                <div style="display: flex; gap: 0.5rem; align-items: center;">
-                    <span class="budget-values"><strong>${Utils.formatCurrency(spent)}</strong> / ${Utils.formatCurrency(limit)}</span>
-                    <button class="btn btn-icon btn-sm btn-ghost" onclick="App.editBudget('${cat}')" title="Editar">
-                        <i class="fas fa-pen"></i>
-                    </button>
-                    <button class="btn btn-icon btn-sm btn-ghost text-danger" onclick="App.deleteBudget('${cat}')" title="Excluir">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="progress-bar">
-                <div class="progress-fill" style="width: ${percentage}%; background: ${color};"></div>
-            </div>
-        `;
-        listEl.appendChild(item);
-    });
-},
+                const budgets = App.currentData.budgets || {};
+                const listEl = document.getElementById('budget-list');
+                listEl.innerHTML = '';
+                const catsWithBudget = Object.keys(budgets).filter(cat => budgets[cat] > 0);
+                if (catsWithBudget.length === 0) {
+                    listEl.innerHTML = `<div class="empty-state"><i class="fas fa-wallet"></i><p>Nenhum orçamento definido. Clique no + para definir.</p></div>`;
+                    return;
+                }
+                const icons = { 'Alimentação': '🍽️', 'Moradia': '🏠', 'Transporte': '🚗', 'Lazer': '🎮', 'Saúde': '💊', 'Educação': '📚', 'Outros': '📦' };
+                catsWithBudget.forEach(cat => {
+                    const limit = budgets[cat];
+                    const spent = categoryExpenses[cat] || 0;
+                    const percentage = Math.min((spent / limit) * 100, 100);
+                    const color = percentage >= 90 ? 'var(--danger)' : (percentage >= 70 ? 'var(--warning)' : 'var(--success)');
+                    const item = document.createElement('div');
+                    item.className = 'budget-item';
+                    item.innerHTML = `
+                        <div class="budget-header">
+                            <span class="budget-cat">${icons[cat] || '📦'} ${cat}</span>
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <span class="budget-values"><strong>${Utils.formatCurrency(spent)}</strong> / ${Utils.formatCurrency(limit)}</span>
+                                <button class="btn btn-icon btn-sm btn-ghost" onclick="App.editBudget('${cat}')" title="Editar">
+                                    <i class="fas fa-pen"></i>
+                                </button>
+                                <button class="btn btn-icon btn-sm btn-ghost text-danger" onclick="App.deleteBudget('${cat}')" title="Excluir">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${percentage}%; background: ${color};"></div>
+                        </div>
+                    `;
+                    listEl.appendChild(item);
+                });
+            },
             renderTransactions: (records) => {
                 const listEl = document.getElementById('transaction-list');
                 listEl.innerHTML = '';
@@ -1388,262 +1366,242 @@
                     listEl.appendChild(card);
                 });
             },
-            openModal: (id) => { document.getElementById(id).classList.add('active'); if (id === 'record-modal') App.resetRecordForm(); else if (id === 'budget-modal') App.loadBudgetForm(); else if (id === 'settings-modal') { document.getElementById('setting-name').value = App.currentUser.name; document.getElementById('setting-password').value = ''; } else if (id === 'report-modal') App.renderReport('6months'); },
+            openModal: (id) => { 
+                document.getElementById(id).classList.add('active'); 
+                if (id === 'record-modal') App.resetRecordForm(); 
+                else if (id === 'budget-modal') App.loadBudgetForm(); 
+                else if (id === 'settings-modal') { 
+                    document.getElementById('setting-name').value = App.currentUser.name; 
+                    document.getElementById('setting-password').value = ''; 
+                } 
+                else if (id === 'report-modal') App.renderReport('6months'); 
+            },
             closeModal: (id) => { document.getElementById(id).classList.remove('active'); },
-            toggleType: (radio) => { document.querySelectorAll('.type-option').forEach(el => el.classList.remove('active')); document.getElementById(`type-${radio.value}-label`).classList.add('active'); },
-            toggleRepeatOptions: () => { const val = document.getElementById('record-repeat').value; document.getElementById('installment-group').classList.toggle('hidden', val !== 'installment'); },
-            resetRecordForm: () => { document.getElementById('record-form').reset(); document.getElementById('record-id').value = ''; document.getElementById('record-date').value = new Date().toISOString().split('T')[0]; App.toggleType(document.querySelector('input[name="type"][value="expense"]')); App.toggleRepeatOptions(); },
+            toggleType: (radio) => { 
+                document.querySelectorAll('.type-option').forEach(el => el.classList.remove('active')); 
+                document.getElementById(`type-${radio.value}-label`).classList.add('active'); 
+            },
+            toggleRepeatOptions: () => { 
+                const val = document.getElementById('record-repeat').value; 
+                document.getElementById('installment-group').classList.toggle('hidden', val !== 'installment'); 
+            },
+            resetRecordForm: () => { 
+                document.getElementById('record-form').reset(); 
+                document.getElementById('record-id').value = ''; 
+                document.getElementById('record-date').value = new Date().toISOString().split('T')[0]; 
+                App.toggleType(document.querySelector('input[name="type"][value="expense"]')); 
+                App.toggleRepeatOptions(); 
+            },
             saveRecord: async () => {
-    const id = document.getElementById('record-id').value;
-    const type = document.querySelector('input[name="type"]:checked').value;
-    const desc = document.getElementById('record-desc').value;
-    const value = parseFloat(document.getElementById('record-value').value);
-    const date = document.getElementById('record-date').value;
-    const category = document.getElementById('record-category').value;
-    const status = document.getElementById('record-status').checked;
-    const repeat = document.getElementById('record-repeat').value;
-    const parcels = parseInt(document.getElementById('record-parcels').value) || 2;
-    const notes = document.getElementById('record-notes').value;
-    const isInstallment = document.getElementById('record-form').dataset.isInstallment === 'true';
+                const id = document.getElementById('record-id').value;
+                const type = document.querySelector('input[name="type"]:checked').value;
+                const desc = document.getElementById('record-desc').value;
+                const value = parseFloat(document.getElementById('record-value').value);
+                const date = document.getElementById('record-date').value;
+                const category = document.getElementById('record-category').value;
+                const status = document.getElementById('record-status').checked;
+                const repeat = document.getElementById('record-repeat').value;
+                const parcels = parseInt(document.getElementById('record-parcels').value) || 2;
+                const notes = document.getElementById('record-notes').value;
+                const isInstallment = document.getElementById('record-form').dataset.isInstallment === 'true';
 
-    if (!desc || !value || !date) { 
-        Utils.showToast('Preencha os campos obrigatórios!', 'error'); 
-        return; 
-    }
+                if (!desc || !value || !date) { 
+                    Utils.showToast('Preencha os campos obrigatórios!', 'error'); 
+                    return; 
+                }
 
-    // Se for edição de registro parcelado ou fixo, perguntar
-    if (id && (isInstallment || repeat === 'fixed')) {
-        const editAll = confirm('Deseja editar APENAS este registro?\n\nClique em OK para editar apenas este.\nClique em Cancelar para editar este e os próximos registros (fixos ou parcelados).');
-        
-        if (editAll) {
-            // Editar apenas este
-            await App.updateSingleRecord(id, { type, description: desc, value, date, category, status, repeat: 'none', notes });
-        } else {
-            // Editar este e os próximos (fixos ou parcelados)
-            await App.updateRecurringRecords(id, { type, description: desc, value, date, category, status, notes, repeat });
-        }
-    } else if (id) {
-        // Edição simples (não recorrente)
-        await App.updateSingleRecord(id, { type, description: desc, value, date, category, status, repeat: 'none', notes });
-    } else {
-        // Novo registro
-        if (repeat === 'none' || repeat === 'fixed') {
-            const newRecord = { id: Utils.generateId(), type, description: desc, value, date, category, status, repeat, notes };
-            App.currentData.records.push(newRecord);
-            await FirebaseService.saveRecord(App.currentUser.uid, newRecord);
-        } else if (repeat === 'installment') {
-            const baseDate = new Date(date);
-            for (let i = 0; i < parcels; i++) {
-                const newDate = new Date(baseDate);
-                newDate.setMonth(newDate.getMonth() + i);
-                const dateStr = newDate.toISOString().split('T')[0];
-                const newRecord = { 
-                    id: Utils.generateId(), 
-                    type, 
-                    description: `${desc} (${i + 1}/${parcels})`, 
-                    value, 
-                    date: dateStr, 
-                    category, 
-                    status: i === 0 ? status : false, 
-                    repeat: 'installment', 
-                    notes 
-                };
-                App.currentData.records.push(newRecord);
-                await FirebaseService.saveRecord(App.currentUser.uid, newRecord);
-            }
-        }
-    }
+                if (id && (isInstallment || repeat === 'fixed')) {
+                    const editAll = confirm('Deseja editar APENAS este registro?\n\nClique em OK para editar apenas este.\nClique em Cancelar para editar este e os próximos registros (fixos ou parcelados).');
+                    
+                    if (editAll) {
+                        await App.updateSingleRecord(id, { type, description: desc, value, date, category, status, repeat: 'none', notes });
+                    } else {
+                        await App.updateRecurringRecords(id, { type, description: desc, value, date, category, status, notes, repeat });
+                    }
+                } else if (id) {
+                    await App.updateSingleRecord(id, { type, description: desc, value, date, category, status, repeat: 'none', notes });
+                } else {
+                    if (repeat === 'none' || repeat === 'fixed') {
+                        const newRecord = { id: Utils.generateId(), type, description: desc, value, date, category, status, repeat, notes };
+                        App.currentData.records.push(newRecord);
+                        await FirebaseService.saveRecord(App.currentUser.uid, newRecord);
+                    } else if (repeat === 'installment') {
+                        const baseDate = new Date(date);
+                        for (let i = 0; i < parcels; i++) {
+                            const newDate = new Date(baseDate);
+                            newDate.setMonth(newDate.getMonth() + i);
+                            const dateStr = newDate.toISOString().split('T')[0];
+                            const newRecord = { 
+                                id: Utils.generateId(), 
+                                type, 
+                                description: `${desc} (${i + 1}/${parcels})`, 
+                                value, 
+                                date: dateStr, 
+                                category, 
+                                status: i === 0 ? status : false, 
+                                repeat: 'installment', 
+                                notes 
+                            };
+                            App.currentData.records.push(newRecord);
+                            await FirebaseService.saveRecord(App.currentUser.uid, newRecord);
+                        }
+                    }
+                }
 
-    Storage.saveUserData(App.currentUser.email, App.currentData);
-    App.closeModal('record-modal');
-    App.renderDashboard();
-    Utils.showToast('Registro salvo com sucesso!');
-},
-// Atualizar apenas um registro
-updateSingleRecord: async (id, updates) => {
-    const idx = App.currentData.records.findIndex(r => r.id === id);
-    if (idx !== -1) {
-        App.currentData.records[idx] = { ...App.currentData.records[idx], ...updates };
-        await FirebaseService.saveRecord(App.currentUser.uid, App.currentData.records[idx]);
-    }
-},
+                Storage.saveUserData(App.currentUser.email, App.currentData);
+                App.closeModal('record-modal');
+                App.renderDashboard();
+                Utils.showToast('Registro salvo com sucesso!');
+            },
+            updateSingleRecord: async (id, updates) => {
+                const idx = App.currentData.records.findIndex(r => r.id === id);
+                if (idx !== -1) {
+                    App.currentData.records[idx] = { ...App.currentData.records[idx], ...updates };
+                    await FirebaseService.saveRecord(App.currentUser.uid, App.currentData.records[idx]);
+                }
+            },
+            updateRecurringRecords: async (id, updates) => {
+                const recordIndex = App.currentData.records.findIndex(r => r.id === id);
+                if (recordIndex === -1) return;
 
-// Atualizar registro e os próximos (parcelados ou fixos)
-updateRecurringRecords: async (id, updates) => {
-    const recordIndex = App.currentData.records.findIndex(r => r.id === id);
-    if (recordIndex === -1) return;
-
-    const originalRecord = App.currentData.records[recordIndex];
-    
-    // Verificar se é parcelado
-    const match = originalRecord.description.match(/\((\d+)\/(\d+)\)/);
-    
-    if (match) {
-        // É parcelado - atualizar deste em diante
-        const currentParcel = parseInt(match[1]);
-        const totalParcels = parseInt(match[2]);
-        const baseDesc = updates.description;
-
-        for (let i = currentParcel; i <= totalParcels; i++) {
-            const recordToUpdate = App.currentData.records.find(r => {
-                const rMatch = r.description.match(/\((\d+)\/(\d+)\)/);
-                return rMatch && parseInt(rMatch[1]) === i && r.description.includes(baseDesc);
-            });
-
-            if (recordToUpdate) {
-                const updatedDesc = i === currentParcel ? baseDesc : `${baseDesc} (${i}/${totalParcels})`;
-                recordToUpdate.description = updatedDesc;
-                recordToUpdate.value = updates.value;
-                recordToUpdate.category = updates.category;
-                recordToUpdate.notes = updates.notes;
+                const originalRecord = App.currentData.records[recordIndex];
+                const match = originalRecord.description.match(/\((\d+)\/(\d+)\)/);
                 
-                await FirebaseService.saveRecord(App.currentUser.uid, recordToUpdate);
-            }
-        }
-    } else if (originalRecord.repeat === 'fixed' || updates.repeat === 'fixed') {
-        // É fixo - atualizar todos os registros fixos com mesma descrição a partir desta data
-        const baseDesc = updates.description;
-        const startDate = new Date(updates.date);
-        
-        const recordsToUpdate = App.currentData.records.filter(r => {
-            const recordDate = new Date(r.date);
-            return r.description.includes(originalRecord.description.replace(/\s\(\d+\/\d+\)$/, '')) && 
-                   r.repeat === 'fixed' && 
-                   recordDate >= startDate;
-        });
+                if (match) {
+                    const currentParcel = parseInt(match[1]);
+                    const totalParcels = parseInt(match[2]);
+                    const baseDesc = updates.description;
 
-        for (const recordToUpdate of recordsToUpdate) {
-            recordToUpdate.description = baseDesc;
-            recordToUpdate.value = updates.value;
-            recordToUpdate.category = updates.category;
-            recordToUpdate.notes = updates.notes;
-            
-            await FirebaseService.saveRecord(App.currentUser.uid, recordToUpdate);
-        }
-    } else {
-        // Não é parcelado nem fixo, atualiza só este
-        await App.updateSingleRecord(id, updates);
-    }
-},
+                    for (let i = currentParcel; i <= totalParcels; i++) {
+                        const recordToUpdate = App.currentData.records.find(r => {
+                            const rMatch = r.description.match(/\((\d+)\/(\d+)\)/);
+                            return rMatch && parseInt(rMatch[1]) === i && r.description.includes(baseDesc);
+                        });
 
-editRecord: (id) => {
-    const r = App.currentData.records.find(rec => rec.id === id);
-    if (!r) return;
+                        if (recordToUpdate) {
+                            const updatedDesc = i === currentParcel ? baseDesc : `${baseDesc} (${i}/${totalParcels})`;
+                            recordToUpdate.description = updatedDesc;
+                            recordToUpdate.value = updates.value;
+                            recordToUpdate.category = updates.category;
+                            recordToUpdate.notes = updates.notes;
+                            await FirebaseService.saveRecord(App.currentUser.uid, recordToUpdate);
+                        }
+                    }
+                } else if (originalRecord.repeat === 'fixed' || updates.repeat === 'fixed') {
+                    const baseDesc = updates.description;
+                    const startDate = new Date(updates.date);
+                    
+                    const recordsToUpdate = App.currentData.records.filter(r => {
+                        const recordDate = new Date(r.date);
+                        return r.description.includes(originalRecord.description.replace(/\s\(\d+\/\d+\)$/, '')) && 
+                               r.repeat === 'fixed' && 
+                               recordDate >= startDate;
+                    });
 
-    document.getElementById('record-id').value = r.id;
-    document.querySelector(`input[name="type"][value="${r.type}"]`).checked = true;
-    App.toggleType(document.querySelector(`input[name="type"][value="${r.type}"]`));
-    document.getElementById('record-desc').value = r.description.replace(/\s\(\d+\/\d+\)$/, '');
-    document.getElementById('record-value').value = r.value;
-    document.getElementById('record-date').value = r.date;
-    document.getElementById('record-category').value = r.category;
-    document.getElementById('record-status').checked = r.status;
-    document.getElementById('record-repeat').value = r.repeat;
-    App.toggleRepeatOptions();
-    document.getElementById('record-notes').value = r.notes || '';
-    
-    // Armazenar se é parcelado ou fixo para usar na confirmação
-    document.getElementById('record-form').dataset.isInstallment = r.repeat === 'installment' ? 'true' : 'false';
+                    for (const recordToUpdate of recordsToUpdate) {
+                        recordToUpdate.description = baseDesc;
+                        recordToUpdate.value = updates.value;
+                        recordToUpdate.category = updates.category;
+                        recordToUpdate.notes = updates.notes;
+                        await FirebaseService.saveRecord(App.currentUser.uid, recordToUpdate);
+                    }
+                } else {
+                    await App.updateSingleRecord(id, updates);
+                }
+            },
+            editRecord: (id) => {
+                const r = App.currentData.records.find(rec => rec.id === id);
+                if (!r) return;
 
-    App.openModal('record-modal');
-},
+                document.getElementById('record-id').value = r.id;
+                document.querySelector(`input[name="type"][value="${r.type}"]`).checked = true;
+                App.toggleType(document.querySelector(`input[name="type"][value="${r.type}"]`));
+                document.getElementById('record-desc').value = r.description.replace(/\s\(\d+\/\d+\)$/, '');
+                document.getElementById('record-value').value = r.value;
+                document.getElementById('record-date').value = r.date;
+                document.getElementById('record-category').value = r.category;
+                document.getElementById('record-status').checked = r.status;
+                document.getElementById('record-repeat').value = r.repeat;
+                App.toggleRepeatOptions();
+                document.getElementById('record-notes').value = r.notes || '';
+                document.getElementById('record-form').dataset.isInstallment = r.repeat === 'installment' ? 'true' : 'false';
+
+                App.openModal('record-modal');
+            },
             deleteRecord: async (id) => {
-    if (confirm('Tem certeza que deseja excluir este registro?')) {
-        App.currentData.records = App.currentData.records.filter(r => r.id !== id);
-        Storage.saveUserData(App.currentUser.email, App.currentData);
-        await FirebaseService.deleteRecord(App.currentUser.uid, id);
-        App.renderDashboard();
-        Utils.showToast('Registro excluído.');
-    }
-},
+                if (confirm('Tem certeza que deseja excluir este registro?')) {
+                    App.currentData.records = App.currentData.records.filter(r => r.id !== id);
+                    Storage.saveUserData(App.currentUser.email, App.currentData);
+                    await FirebaseService.deleteRecord(App.currentUser.uid, id);
+                    App.renderDashboard();
+                    Utils.showToast('Registro excluído.');
+                }
+            },
             toggleStatus: async (id) => {
-    const record = App.currentData.records.find(r => r.id === id);
-    if (record) {
-        record.status = !record.status;
-        Storage.saveUserData(App.currentUser.email, App.currentData);
-        await FirebaseService.saveRecord(App.currentUser.uid, record);
-        App.renderDashboard();
-        const statusText = record.status ? (record.type === 'income' ? 'Recebido' : 'Pago') : 'Pendente';
-        Utils.showToast(`Status alterado para: ${statusText}`);
-    }
-},
+                const record = App.currentData.records.find(r => r.id === id);
+                if (record) {
+                    record.status = !record.status;
+                    Storage.saveUserData(App.currentUser.email, App.currentData);
+                    await FirebaseService.saveRecord(App.currentUser.uid, record);
+                    App.renderDashboard();
+                    const statusText = record.status ? (record.type === 'income' ? 'Recebido' : 'Pago') : 'Pendente';
+                    Utils.showToast(`Status alterado para: ${statusText}`);
+                }
+            },
             loadBudgetForm: () => {
-    const budgets = App.currentData.budgets || {};
-    document.querySelectorAll('.budget-input').forEach(input => {
-        const cat = input.getAttribute('data-cat');
-        input.value = budgets[cat] || '';
-    });
-},
-
-saveBudget: async () => {
-    const newBudgets = {};
-    document.querySelectorAll('.budget-input').forEach(input => {
-        const val = parseFloat(input.value);
-        if (val > 0) newBudgets[input.getAttribute('data-cat')] = val;
-    });
-    
-    App.currentData.budgets = newBudgets;
-    Storage.saveUserData(App.currentUser.email, App.currentData);
-    
-    // Sincronizar com Firebase
-    await FirebaseService.saveBudgets(App.currentUser.uid, newBudgets);
-    
-    App.closeModal('budget-modal');
-    App.renderDashboard();
-    Utils.showToast('Orçamentos atualizados!');
-},
-
-// Deletar orçamento
-deleteBudget: (category) => {
-    if (confirm(`Deseja remover o orçamento de ${category}?`)) {
-        delete App.currentData.budgets[category];
-        Storage.saveUserData(App.currentUser.email, App.currentData);
-        FirebaseService.saveBudgets(App.currentUser.uid, App.currentData.budgets);
-        App.renderDashboard();
-        Utils.showToast('Orçamento removido!');
-    }
-},
-
-// Editar orçamento
-editBudget: (category) => {
-    const currentBudget = App.currentData.budgets[category] || 0;
-    const newValue = prompt(`Editar orçamento de ${category}:\n\nValor atual: ${Utils.formatCurrency(currentBudget)}`, currentBudget);
-    
-    if (newValue !== null) {
-        const parsedValue = parseFloat(newValue);
-        if (!isNaN(parsedValue) && parsedValue > 0) {
-            App.currentData.budgets[category] = parsedValue;
-            Storage.saveUserData(App.currentUser.email, App.currentData);
-            FirebaseService.saveBudgets(App.currentUser.uid, App.currentData.budgets);
-            App.renderDashboard();
-            Utils.showToast('Orçamento atualizado!');
-        } else if (parsedValue === 0) {
-            delete App.currentData.budgets[category];
-            Storage.saveUserData(App.currentUser.email, App.currentData);
-            FirebaseService.saveBudgets(App.currentUser.uid, App.currentData.budgets);
-            App.renderDashboard();
-            Utils.showToast('Orçamento removido!');
-        } else {
-            Utils.showToast('Valor inválido!', 'error');
-        }
-    }
-},
-    const newBudgets = {};
-    document.querySelectorAll('.budget-input').forEach(input => {
-        const val = parseFloat(input.value);
-        if (val > 0) newBudgets[input.getAttribute('data-cat')] = val;
-    });
-    
-    App.currentData.budgets = newBudgets;
-    Storage.saveUserData(App.currentUser.email, App.currentData);
-    
-    // Sincronizar com Firebase
-    await FirebaseService.saveBudgets(App.currentUser.uid, newBudgets);
-    
-    App.closeModal('budget-modal');
-    App.renderDashboard();
-    Utils.showToast('Orçamentos atualizados!');
-},
+                const budgets = App.currentData.budgets || {};
+                document.querySelectorAll('.budget-input').forEach(input => {
+                    const cat = input.getAttribute('data-cat');
+                    input.value = budgets[cat] || '';
+                });
+            },
+            saveBudget: async () => {
+                const newBudgets = {};
+                document.querySelectorAll('.budget-input').forEach(input => {
+                    const val = parseFloat(input.value);
+                    if (val > 0) newBudgets[input.getAttribute('data-cat')] = val;
+                });
+                
+                App.currentData.budgets = newBudgets;
+                Storage.saveUserData(App.currentUser.email, App.currentData);
+                await FirebaseService.saveBudgets(App.currentUser.uid, newBudgets);
+                
+                App.closeModal('budget-modal');
+                App.renderDashboard();
+                Utils.showToast('Orçamentos atualizados!');
+            },
+            deleteBudget: (category) => {
+                if (confirm(`Deseja remover o orçamento de ${category}?`)) {
+                    delete App.currentData.budgets[category];
+                    Storage.saveUserData(App.currentUser.email, App.currentData);
+                    FirebaseService.saveBudgets(App.currentUser.uid, App.currentData.budgets);
+                    App.renderDashboard();
+                    Utils.showToast('Orçamento removido!');
+                }
+            },
+            editBudget: (category) => {
+                const currentBudget = App.currentData.budgets[category] || 0;
+                const newValue = prompt(`Editar orçamento de ${category}:\n\nValor atual: ${Utils.formatCurrency(currentBudget)}`, currentBudget);
+                
+                if (newValue !== null) {
+                    const parsedValue = parseFloat(newValue);
+                    if (!isNaN(parsedValue) && parsedValue > 0) {
+                        App.currentData.budgets[category] = parsedValue;
+                        Storage.saveUserData(App.currentUser.email, App.currentData);
+                        FirebaseService.saveBudgets(App.currentUser.uid, App.currentData.budgets);
+                        App.renderDashboard();
+                        Utils.showToast('Orçamento atualizado!');
+                    } else if (parsedValue === 0) {
+                        delete App.currentData.budgets[category];
+                        Storage.saveUserData(App.currentUser.email, App.currentData);
+                        FirebaseService.saveBudgets(App.currentUser.uid, App.currentData.budgets);
+                        App.renderDashboard();
+                        Utils.showToast('Orçamento removido!');
+                    } else {
+                        Utils.showToast('Valor inválido!', 'error');
+                    }
+                }
+            },
             renderReport: (period) => {
                 document.querySelectorAll('.filter-btn').forEach(btn => { btn.classList.toggle('active', btn.getAttribute('data-period') === period); });
                 const records = App.currentData.records;
@@ -1719,13 +1677,11 @@ editBudget: (category) => {
             }
         };
 
-        // Inicialização
         document.addEventListener('DOMContentLoaded', () => {
             Theme.init();
             Auth.init();
             Clock.init();
         });
-
     </script>
 </body>
 </html>
