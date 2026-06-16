@@ -1362,12 +1362,18 @@
                 document.getElementById('installment-group').classList.toggle('hidden', val !== 'installment'); 
             },
             resetRecordForm: () => { 
-                document.getElementById('record-form').reset(); 
-                document.getElementById('record-id').value = ''; 
-                document.getElementById('record-date').value = new Date().toISOString().split('T')[0]; 
-                App.toggleType(document.querySelector('input[name="type"][value="expense"]')); 
-                App.toggleRepeatOptions(); 
-            },
+    document.getElementById('record-form').reset(); 
+    document.getElementById('record-id').value = ''; 
+    
+    // Usa o mês selecionado no seletor em vez do mês atual
+    const selectedMonth = App.currentMonth; // formato: "2026-07"
+    const day = new Date().getDate(); // pega o dia atual
+    const dateStr = `${selectedMonth}-${String(day).padStart(2, '0')}`;
+    document.getElementById('record-date').value = dateStr;
+    
+    App.toggleType(document.querySelector('input[name="type"][value="expense"]')); 
+    App.toggleRepeatOptions(); 
+},
 			populateCategorySelect: () => {
     const select = document.getElementById('record-category');
     const budgets = App.currentData.budgets || {};
