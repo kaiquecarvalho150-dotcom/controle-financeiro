@@ -1001,6 +1001,39 @@
 
     <div id="toast" class="toast"></div>
 
+<!-- Modal de confirmação de exclusão com 3 opções -->
+<div class="modal-overlay" id="delete-confirm-modal">
+    <div class="modal" style="max-width: 400px;">
+        <div class="modal-header">
+            <h3><i class="fas fa-exclamation-triangle" style="color: var(--warning); margin-right: 0.5rem;"></i>Confirmar Exclusão</h3>
+        </div>
+        <div class="modal-body">
+            <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">Deseja excluir apenas este registro ou também os próximos (fixos/parcelados)?</p>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <button class="btn btn-outline" onclick="App.confirmDelete('single')" style="justify-content: flex-start; text-align: left; padding: 1rem;">
+                    <i class="fas fa-trash" style="margin-right: 0.5rem; color: var(--danger);"></i>
+                    <div>
+                        <div style="font-weight: 600;">Excluir APENAS este</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">Mantém os próximos registros</div>
+                    </div>
+                </button>
+                <button class="btn btn-outline" onclick="App.confirmDelete('all')" style="justify-content: flex-start; text-align: left; padding: 1rem;">
+                    <i class="fas fa-trash-alt" style="margin-right: 0.5rem; color: var(--warning);"></i>
+                    <div>
+                        <div style="font-weight: 600;">Excluir este e os próximos</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">Remove todos a partir deste</div>
+                    </div>
+                </button>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="App.closeModal('delete-confirm-modal')">
+                <i class="fas fa-times" style="margin-right: 0.5rem;"></i>Cancelar
+            </button>
+        </div>
+    </div>
+</div>
+
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyD1o73kUZI3WY35pQ7Z9_tnw3g4JXwst9A",
@@ -1209,6 +1242,7 @@
             currentData: null,
             currentMonth: new Date().toISOString().slice(0, 7),
             chartInstance: null,
+			deleteRecordId: null,
             loadDashboard: (user) => {
                 App.currentUser = user;
                 App.currentData = Storage.getUserData(user.email);
@@ -1588,29 +1622,39 @@ saveRecord: async () => {
     const record = App.currentData.records.find(r => r.id === id);
     if (!record) return;
 
-    // Se for registro parcelado ou fixo, perguntar
+    // Se for registro parcelado ou fixo, mostra modal com 3 opções
     if (record.repeat === 'installment' || record.repeat === 'fixed') {
-        const deleteAll = confirm('Deseja excluir APENAS este registro?\n\nClique em OK para excluir apenas este.\nClique em Cancelar para excluir este e os próximos registros (fixos ou parcelados).');
-        
-        if (deleteAll) {
-            // Excluir apenas este
-            App.currentData.records = App.currentData.records.filter(r => r.id !== id);
-            await FirebaseService.deleteRecord(App.currentUser.uid, id);
-        } else {
-            // Excluir este e os próximos
-            await App.deleteRecurringRecords(id);
-        }
+        // Armazena o ID para usar na confirmação
+        App.deleteRecordId = id;
+        App.openModal('delete-confirm-modal');
     } else {
         // Exclusão simples (não recorrente)
         if (confirm('Tem certeza que deseja excluir este registro?')) {
             App.currentData.records = App.currentData.records.filter(r => r.id !== id);
             await FirebaseService.deleteRecord(App.currentUser.uid, id);
+            Storage.saveUserData(App.currentUser.email, App.currentData);
+            App.renderDashboard();
+            Utils.showToast('Registro excluído.');
         }
     }
-
+},
+confirmDelete: async (type) => {
+    const id = App.deleteRecordId;
+    App.closeModal('delete-confirm-modal');
+    
+    if (type === 'single') {
+        // Excluir apenas este
+        App.currentData.records = App.currentData.records.filter(r => r.id !== id);
+        await FirebaseService.deleteRecord(App.currentUser.uid, id);
+        Utils.showToast('Registro excluído.');
+    } else if (type === 'all') {
+        // Excluir este e os próximos
+        await App.deleteRecurringRecords(id);
+        Utils.showToast('Registros excluídos.');
+    }
+    
     Storage.saveUserData(App.currentUser.email, App.currentData);
     App.renderDashboard();
-    Utils.showToast('Registro excluído.');
 },
 deleteRecurringRecords: async (id) => {
     const recordIndex = App.currentData.records.findIndex(r => r.id === id);
