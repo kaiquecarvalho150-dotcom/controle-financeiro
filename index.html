@@ -1434,32 +1434,39 @@ saveRecord: async () => {
         await App.updateSingleRecord(id, { type, description: desc, value, date, category, status, repeat: 'none', notes });
     } else {
         // Novo registro
-        if (repeat === 'none' || repeat === 'fixed') {
-            const newRecord = { id: Utils.generateId(), type, description: desc, value, date, category, status, repeat, notes };
-            App.currentData.records.push(newRecord);
-            await FirebaseService.saveRecord(App.currentUser.uid, newRecord);
-        } else if (repeat === 'installment') {
-            const baseDate = new Date(date);
-            for (let i = 0; i < parcels; i++) {
-                const newDate = new Date(baseDate);
-                newDate.setMonth(newDate.getMonth() + i);
-                const dateStr = newDate.toISOString().split('T')[0];
-                const newRecord = { 
-                    id: Utils.generateId(), 
-                    type, 
-                    description: `${desc} (${i + 1}/${parcels})`, 
-                    value, 
-                    date: dateStr, 
-                    category, 
-                    status: i === 0 ? status : false, 
-                    repeat: 'installment', 
-                    notes 
-                };
-                App.currentData.records.push(newRecord);
-                await FirebaseService.saveRecord(App.currentUser.uid, newRecord);
-            }
-        }
+if (repeat === 'none') {
+    const newRecord = { id: Utils.generateId(), type, description: desc, value, date, category, status, repeat, notes };
+    App.currentData.records.push(newRecord);
+    await FirebaseService.saveRecord(App.currentUser.uid, newRecord);
+} else if (repeat === 'fixed') {
+    // Para registros fixos, cria apenas o do mês atual com o status marcado
+    // Os próximos meses serão criados automaticamente com status = false (pendente)
+    const newRecord = { id: Utils.generateId(), type, description: desc, value, date, category, status, repeat, notes };
+    App.currentData.records.push(newRecord);
+    await FirebaseService.saveRecord(App.currentUser.uid, newRecord);
+    
+    // Cria registros futuros dos próximos 11 meses com status = false
+    const baseDate = new Date(date);
+    for (let i = 1; i <= 11; i++) {
+        const futureDate = new Date(baseDate);
+        futureDate.setMonth(futureDate.getMonth() + i);
+        const dateStr = futureDate.toISOString().split('T')[0];
+        
+        const futureRecord = { 
+            id: Utils.generateId(), 
+            type, 
+            description: desc, 
+            value, 
+            date: dateStr, 
+            category, 
+            status: false, // SEMPRE pendente para registros futuros
+            repeat: 'fixed', 
+            notes 
+        };
+        App.currentData.records.push(futureRecord);
+        await FirebaseService.saveRecord(App.currentUser.uid, futureRecord);
     }
+}
 
     Storage.saveUserData(App.currentUser.email, App.currentData);
     App.closeModal('record-modal');
@@ -1474,54 +1481,52 @@ saveRecord: async () => {
                 }
             },
             updateRecurringRecords: async (id, updates) => {
-                const recordIndex = App.currentData.records.findIndex(r => r.id === id);
-                if (recordIndex === -1) return;
+    const recordIndex = App.currentData.records.findIndex(r => r.id === id);
+    if (recordIndex === -1) return;
 
-                const originalRecord = App.currentData.records[recordIndex];
-                const match = originalRecord.description.match(/\((\d+)\/(\d+)\)/);
-                
-                if (match) {
-                    const currentParcel = parseInt(match[1]);
-                    const totalParcels = parseInt(match[2]);
-                    const baseDesc = updates.description;
+    const originalRecord = App.currentData.records[recordIndex];
+    const match = originalRecord.description.match(/\((\d+)\/(\d+)\)/);
+    
+    if (match) {
+        // É parcelado - atualizar deste em diante, MAS sem alterar o status dos futuros
+        const currentParcel = parseInt(match[1]);
+        const totalParcels = parseInt(match[2]);
+        const baseDesc = updates.description;
 
-                    for (let i = currentParcel; i <= totalParcels; i++) {
-                        const recordToUpdate = App.currentData.records.find(r => {
-                            const rMatch = r.description.match(/\((\d+)\/(\d+)\)/);
-                            return rMatch && parseInt(rMatch[1]) === i && r.description.includes(baseDesc);
-                        });
+        for (let i = currentParcel; i <= totalParcels; i++) {
+            const recordToUpdate = App.currentData.records.find(r => {
+                const rMatch = r.description.match(/\((\d+)\/(\d+)\)/);
+                return rMatch && parseInt(rMatch[1]) === i && r.description.includes(baseDesc);
+            });
 
-                        if (recordToUpdate) {
-                            const updatedDesc = i === currentParcel ? baseDesc : `${baseDesc} (${i}/${totalParcels})`;
-                            recordToUpdate.description = updatedDesc;
-                            recordToUpdate.value = updates.value;
-                            recordToUpdate.category = updates.category;
-                            recordToUpdate.notes = updates.notes;
-                            await FirebaseService.saveRecord(App.currentUser.uid, recordToUpdate);
-                        }
-                    }
-                } else if (originalRecord.repeat === 'fixed' || updates.repeat === 'fixed') {
-                    const baseDesc = updates.description;
-                    const startDate = new Date(updates.date);
-                    
-                    const recordsToUpdate = App.currentData.records.filter(r => {
-                        const recordDate = new Date(r.date);
-                        return r.description.includes(originalRecord.description.replace(/\s\(\d+\/\d+\)$/, '')) && 
-                               r.repeat === 'fixed' && 
-                               recordDate >= startDate;
-                    });
-
-                    for (const recordToUpdate of recordsToUpdate) {
-                        recordToUpdate.description = baseDesc;
-                        recordToUpdate.value = updates.value;
-                        recordToUpdate.category = updates.category;
-                        recordToUpdate.notes = updates.notes;
-                        await FirebaseService.saveRecord(App.currentUser.uid, recordToUpdate);
-                    }
-                } else {
-                    await App.updateSingleRecord(id, updates);
+            if (recordToUpdate) {
+                const updatedDesc = i === currentParcel ? baseDesc : `${baseDesc} (${i}/${totalParcels})`;
+                recordToUpdate.description = updatedDesc;
+                recordToUpdate.value = updates.value;
+                recordToUpdate.category = updates.category;
+                recordToUpdate.notes = updates.notes;
+                // NÃO altera o status dos registros futuros
+                if (i === currentParcel) {
+                    recordToUpdate.status = updates.status;
                 }
-            },
+                await FirebaseService.saveRecord(App.currentUser.uid, recordToUpdate);
+            }
+        }
+    } else if (originalRecord.repeat === 'fixed' || updates.repeat === 'fixed') {
+        // É fixo - atualizar apenas este registro, NÃO os futuros
+        const recordToUpdate = App.currentData.records.find(r => r.id === id);
+        if (recordToUpdate) {
+            recordToUpdate.description = updates.description;
+            recordToUpdate.value = updates.value;
+            recordToUpdate.category = updates.category;
+            recordToUpdate.notes = updates.notes;
+            recordToUpdate.status = updates.status;
+            await FirebaseService.saveRecord(App.currentUser.uid, recordToUpdate);
+        }
+    } else {
+        await App.updateSingleRecord(id, updates);
+    }
+},
             editRecord: (id) => {
     const r = App.currentData.records.find(rec => rec.id === id);
     if (!r) return;
@@ -1601,6 +1606,15 @@ deleteRecurringRecords: async (id) => {
                 await FirebaseService.deleteRecord(App.currentUser.uid, recordToDelete.id);
             }
         }
+    } else if (originalRecord.repeat === 'fixed') {
+        // É fixo - excluir APENAS este registro, NÃO os futuros
+        const recordToDelete = App.currentData.records.find(r => r.id === id);
+        if (recordToDelete) {
+            App.currentData.records = App.currentData.records.filter(r => r.id !== recordToDelete.id);
+            await FirebaseService.deleteRecord(App.currentUser.uid, recordToDelete.id);
+        }
+    }
+},
     } else if (originalRecord.repeat === 'fixed') {
         // É fixo - excluir todos os registros fixos com mesma descrição a partir desta data
         const baseDesc = originalRecord.description;
