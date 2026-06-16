@@ -1244,21 +1244,26 @@
             chartInstance: null,
 			deleteRecordId: null,
             loadDashboard: (user) => {
-                App.currentUser = user;
-                App.currentData = Storage.getUserData(user.email);
-                document.getElementById('auth-screen').classList.add('hidden');
-                document.getElementById('app-screen').classList.remove('hidden');
-                document.getElementById('user-name-display').textContent = user.name;
-                document.getElementById('user-avatar').textContent = user.name.charAt(0).toUpperCase();
-                App.populateMonthSelector();
-                const monthInput = document.getElementById('month-selector');
-                monthInput.value = App.currentMonth;
-                monthInput.onchange = (e) => { App.currentMonth = e.target.value; App.renderDashboard(); };
-                document.getElementById('fab-main').onclick = function() { this.classList.toggle('active'); document.getElementById('fab-menu').classList.toggle('active'); };
-                document.addEventListener('click', (e) => { if (!e.target.closest('.fab-container')) { document.getElementById('fab-main').classList.remove('active'); document.getElementById('fab-menu').classList.remove('active'); } });
-                document.getElementById('setting-name').value = user.name;
-                App.renderDashboard();
-            },
+    App.currentUser = user;
+    App.currentData = Storage.getUserData(user.email);
+    document.getElementById('auth-screen').classList.add('hidden');
+    document.getElementById('app-screen').classList.remove('hidden');
+    document.getElementById('user-name-display').textContent = user.name;
+    document.getElementById('user-avatar').textContent = user.name.charAt(0).toUpperCase();
+    App.populateMonthSelector();
+    const monthInput = document.getElementById('month-selector');
+    monthInput.value = App.currentMonth;
+    monthInput.onchange = (e) => { 
+        App.currentMonth = e.target.value; 
+        App.ensureFixedRecords(); // ← ADICIONADO
+        App.renderDashboard(); 
+    };
+    document.getElementById('fab-main').onclick = function() { this.classList.toggle('active'); document.getElementById('fab-menu').classList.toggle('active'); };
+    document.addEventListener('click', (e) => { if (!e.target.closest('.fab-container')) { document.getElementById('fab-main').classList.remove('active'); document.getElementById('fab-menu').classList.remove('active'); } });
+    document.getElementById('setting-name').value = user.name;
+    App.ensureFixedRecords(); // ← ADICIONADO
+    App.renderDashboard();
+},
             populateMonthSelector: () => {
                 const select = document.getElementById('month-selector');
                 select.innerHTML = '';
@@ -1300,6 +1305,77 @@
     else balanceSub.textContent = 'Receitas = Despesas';
     App.renderBudgets(categoryExpenses);
     App.renderTransactions(monthRecords);
+},
+ensureFixedRecords: async () => {
+    const records = App.currentData.records;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const fixedRecords = records.filter(r => r.repeat === 'fixed');
+    
+    // Agrupa por descrição para encontrar despesas fixas únicas
+    const uniqueFixed = {};
+    fixedRecords.forEach(r => {
+        if (!uniqueFixed[r.description]) {
+            uniqueFixed[r.description] = r;
+        }
+    });
+    
+    let hasNewRecords = false;
+    
+    // Para cada despesa fixa única, garante 12 registros futuros
+    for (const desc in uniqueFixed) {
+        const template = uniqueFixed[desc];
+        const existingRecords = fixedRecords.filter(r => r.description === desc);
+        
+        // Encontra a data do último registro
+        let latestDate = null;
+        existingRecords.forEach(r => {
+            const rDate = new Date(r.date + 'T00:00:00');
+            if (!latestDate || rDate > latestDate) {
+                latestDate = rDate;
+            }
+        });
+        
+        if (!latestDate) continue;
+        
+        // Conta quantos registros futuros temos
+        const futureRecords = existingRecords.filter(r => {
+            const rDate = new Date(r.date + 'T00:00:00');
+            return rDate >= today;
+        });
+        
+        // Se tiver menos de 12 registros futuros, cria mais
+        if (futureRecords.length < 12) {
+            const recordsNeeded = 12 - futureRecords.length;
+            let startDate = new Date(latestDate);
+            startDate.setMonth(startDate.getMonth() + 1);
+            
+            for (let i = 0; i < recordsNeeded; i++) {
+                const newDate = new Date(startDate);
+                const newRecord = {
+                    id: Utils.generateId(),
+                    type: template.type,
+                    description: template.description,
+                    value: template.value,
+                    date: newDate.toISOString().split('T')[0],
+                    category: template.category,
+                    status: false, // Sempre pendente para registros futuros
+                    repeat: 'fixed',
+                    notes: template.notes
+                };
+                
+                records.push(newRecord);
+                await FirebaseService.saveRecord(App.currentUser.uid, newRecord);
+                hasNewRecords = true;
+                
+                startDate.setMonth(startDate.getMonth() + 1);
+            }
+        }
+    }
+    
+    if (hasNewRecords) {
+        Storage.saveUserData(App.currentUser.email, App.currentData);
+    }
 },
             renderBudgets: (categoryExpenses) => {
     const budgets = App.currentData.budgets || {};
