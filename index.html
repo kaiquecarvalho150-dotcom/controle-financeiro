@@ -1273,32 +1273,48 @@
                 }
             },
             renderDashboard: () => {
-                const month = App.currentMonth;
-                const records = App.currentData.records;
-                const monthRecords = records.filter(r => {
-                    const recordMonth = r.date.slice(0, 7);
-                    if (r.repeat === 'fixed') return recordMonth <= month;
-                    return recordMonth === month;
-                });
-                let income = 0, expense = 0;
-                const categoryExpenses = {};
-                monthRecords.forEach(r => {
-                    if (r.type === 'income') income += r.value;
-                    else { expense += r.value; categoryExpenses[r.category] = (categoryExpenses[r.category] || 0) + r.value; }
-                });
-                const balance = income - expense;
-                document.getElementById('total-income').textContent = Utils.formatCurrency(income);
-                document.getElementById('total-expense').textContent = Utils.formatCurrency(expense);
-                const balanceEl = document.getElementById('total-balance');
-                balanceEl.textContent = Utils.formatCurrency(balance);
-                balanceEl.className = `summary-value ${balance >= 0 ? 'text-success' : 'text-danger'}`;
-                const balanceSub = document.getElementById('balance-subtitle');
-                if (balance > 0) balanceSub.textContent = '✓ Superávit no mês';
-                else if (balance < 0) balanceSub.textContent = '⚠ Déficit no mês';
-                else balanceSub.textContent = 'Receitas = Despesas';
-                App.renderBudgets(categoryExpenses);
-                App.renderTransactions(monthRecords);
-            },
+    const month = App.currentMonth;
+    const records = App.currentData.records;
+    const monthRecords = records.filter(r => {
+        const recordMonth = r.date.slice(0, 7);
+        if (r.repeat === 'fixed') return recordMonth <= month;
+        return recordMonth === month;
+    });
+    
+    // Para registros fixos futuros, força status = false se a data for maior que hoje
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    monthRecords.forEach(r => {
+        if (r.repeat === 'fixed') {
+            const recordDate = new Date(r.date + 'T00:00:00');
+            recordDate.setHours(0, 0, 0, 0);
+            // Se for registro fixo e a data for futura, status deve ser false
+            if (recordDate > today) {
+                r.status = false;
+            }
+        }
+    });
+    
+    let income = 0, expense = 0;
+    const categoryExpenses = {};
+    monthRecords.forEach(r => {
+        if (r.type === 'income') income += r.value;
+        else { expense += r.value; categoryExpenses[r.category] = (categoryExpenses[r.category] || 0) + r.value; }
+    });
+    const balance = income - expense;
+    document.getElementById('total-income').textContent = Utils.formatCurrency(income);
+    document.getElementById('total-expense').textContent = Utils.formatCurrency(expense);
+    const balanceEl = document.getElementById('total-balance');
+    balanceEl.textContent = Utils.formatCurrency(balance);
+    balanceEl.className = `summary-value ${balance >= 0 ? 'text-success' : 'text-danger'}`;
+    const balanceSub = document.getElementById('balance-subtitle');
+    if (balance > 0) balanceSub.textContent = '✓ Superávit no mês';
+    else if (balance < 0) balanceSub.textContent = '⚠ Déficit no mês';
+    else balanceSub.textContent = 'Receitas = Despesas';
+    App.renderBudgets(categoryExpenses);
+    App.renderTransactions(monthRecords);
+},
             renderBudgets: (categoryExpenses) => {
     const budgets = App.currentData.budgets || {};
     const listEl = document.getElementById('budget-list');
