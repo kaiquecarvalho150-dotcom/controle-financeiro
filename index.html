@@ -1683,9 +1683,21 @@ deleteRecurringRecords: async (id) => {
             }
         }
     } else if (originalRecord.repeat === 'fixed') {
-        // É fixo - excluir APENAS este registro, NÃO os futuros
-        const recordToDelete = App.currentData.records.find(r => r.id === id);
-        if (recordToDelete) {
+        // É fixo - excluir este e TODOS os próximos registros fixos com mesma descrição
+        const baseDesc = originalRecord.description;
+        const startDate = new Date(originalRecord.date + 'T00:00:00');
+        startDate.setHours(0, 0, 0, 0);
+        
+        // Encontra todos os registros fixos com mesma descrição e data >= data do selecionado
+        const recordsToDelete = App.currentData.records.filter(r => {
+            if (r.repeat !== 'fixed') return false;
+            if (r.description !== baseDesc) return false;
+            const recordDate = new Date(r.date + 'T00:00:00');
+            recordDate.setHours(0, 0, 0, 0);
+            return recordDate >= startDate;
+        });
+
+        for (const recordToDelete of recordsToDelete) {
             App.currentData.records = App.currentData.records.filter(r => r.id !== recordToDelete.id);
             await FirebaseService.deleteRecord(App.currentUser.uid, recordToDelete.id);
         }
