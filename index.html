@@ -1615,24 +1615,7 @@ deleteRecurringRecords: async (id) => {
         }
     }
 },
-    } else if (originalRecord.repeat === 'fixed') {
-        // É fixo - excluir todos os registros fixos com mesma descrição a partir desta data
-        const baseDesc = originalRecord.description;
-        const startDate = new Date(originalRecord.date);
-        
-        const recordsToDelete = App.currentData.records.filter(r => {
-            const recordDate = new Date(r.date);
-            return r.description === baseDesc && 
-                   r.repeat === 'fixed' && 
-                   recordDate >= startDate;
-        });
-
-        for (const recordToDelete of recordsToDelete) {
-            App.currentData.records = App.currentData.records.filter(r => r.id !== recordToDelete.id);
-            await FirebaseService.deleteRecord(App.currentUser.uid, recordToDelete.id);
-        }
-    }
-},
+    
             toggleStatus: async (id) => {
                 const record = App.currentData.records.find(r => r.id === id);
                 if (record) {
